@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "469269709724",
+    "project_id": "redit-clone-8fd14",
+    "storage_bucket": "redit-clone-8fd14.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:469269709724:android:f066f7a8e74b84c1b8fe59",
+        "android_client_info": {
+          "package_name": "com.example.reddit"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "469269709724-k8ghf4fvlcodqn7j264s0mkclgqcu69s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.reddit",
+            "certificate_hash": "8cfc62e156116f5661dfd9ed84b463fbdb289fa4"
+          }
+        },
+        {
+          "client_id": "469269709724-p4umgkukeh90irdj4toh2ciudni6r14l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbrW97zekwMdtZBAQLC55lC7pcuV6jIJ0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "469269709724-p4umgkukeh90irdj4toh2ciudni6r14l.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
