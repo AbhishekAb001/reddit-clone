@@ -21,6 +21,7 @@ class FirestoreService {
         'photoURL': photoURL,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
+        "hasCompletedOnboarding": false,
       }, SetOptions(merge: true));
     } catch (e) {
       log('Error saving user data: $e');
@@ -75,6 +76,10 @@ class FirestoreService {
 
   Future<void> saveUserInterests(String uid, List<String> interests) async {
     try {
+      //update hasCompletedOnboarding to true
+      await _firestore.collection('users').doc(uid).update({
+        'hasCompletedOnboarding': true,
+      });
       await _firestore.collection('users').doc(uid).update({
         'interests': interests,
         'updatedAt': FieldValue.serverTimestamp(),

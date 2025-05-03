@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:reddit/pages/home_screen.dart';
-import 'package:reddit/service/firestore_service.dart';
+import 'package:reddit/pages/HomePages/Navigation_screen.dart';
+import 'package:reddit/widgets/loading_screen.dart';
+import 'package:reddit/services/firestore_service.dart';
+import 'package:reddit/pages/OnetTimePages/interests_screen.dart';
 
 class AboutYouScreen extends StatefulWidget {
   final String uid;
@@ -38,7 +40,11 @@ class _AboutYouScreenState extends State<AboutYouScreen> {
         'gender': _selectedGender,
         'hasCompletedOnboarding': true,
       });
-      Get.offAll(() => HomeScreen());
+      Get.offAll(
+        () => InterestsScreen(uid: widget.uid),
+        transition: Transition.rightToLeft,
+        duration: const Duration(milliseconds: 300),
+      );
     } catch (e) {
       Get.snackbar(
         'Error',
@@ -72,7 +78,11 @@ class _AboutYouScreenState extends State<AboutYouScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              Get.offAll(() => HomeScreen());
+              Get.offAll(
+                () => const LoadingScreen(),
+                transition: Transition.fadeIn,
+                duration: const Duration(milliseconds: 500),
+              );
             },
             child: Text(
               'Skip',

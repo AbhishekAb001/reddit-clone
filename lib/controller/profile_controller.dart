@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
-import 'package:reddit/service/firestore_service.dart';
-import 'package:reddit/service/shared_preferences_service.dart';
+import 'package:reddit/services/firestore_service.dart';
+import 'package:reddit/services/shared_preferences_service.dart';
 
 class ProfileController extends GetxController {
   final _firestoreService = FirestoreService();
@@ -14,14 +14,20 @@ class ProfileController extends GetxController {
   final RxBool hasCompletedOnboarding = false.obs;
   final RxInt karma = 0.obs;
   final RxString redditAge = ''.obs;
+  final RxString photoUrl = ''.obs;
+
+  // Observable for controlling navigation and app bar visibility
+  final RxBool showNavigationBar = true.obs;
+  final RxBool showAppBar = true.obs;
+  double _lastScrollPosition = 0;
 
   @override
   void onInit() {
     super.onInit();
-    _loadUserData();
+    loadUserData();
   }
 
-  Future<void> _loadUserData() async {
+  Future<void> loadUserData() async {
     try {
       final userId = _prefs.getUserId();
       if (userId != null) {
@@ -35,6 +41,7 @@ class ProfileController extends GetxController {
           hasCompletedOnboarding.value =
               userData['hasCompletedOnboarding'] ?? false;
           karma.value = userData['karma'] ?? 0;
+          photoUrl.value = userData['photoUrl'] ?? '';
 
           // Calculate Reddit age
           if (userData['createdAt'] != null) {
@@ -106,6 +113,43 @@ class ProfileController extends GetxController {
     }
   }
 
+  Future<void> updatePhotoUrl(String newPhotoUrl) async {
+    try {
+      await _firestoreService.updateUserData(userId.value, {
+        'photoUrl': newPhotoUrl,
+      });
+      photoUrl.value = newPhotoUrl;
+    } catch (e) {
+      print('Error updating photoUrl: $e');
+      rethrow;
+    }
+  }
+
+  // Method to handle scroll events
+  void handleScroll(double scrollPosition) {
+    // If scrolling down, hide the bars
+    if (scrollPosition > _lastScrollPosition && scrollPosition > 20) {
+      if (showNavigationBar.value || showAppBar.value) {
+        showNavigationBar.value = false;
+        showAppBar.value = false;
+      }
+    }
+    // If scrolling up, show the bars
+    else if (scrollPosition < _lastScrollPosition) {
+      if (!showNavigationBar.value || !showAppBar.value) {
+        showNavigationBar.value = true;
+        showAppBar.value = true;
+      }
+    }
+    _lastScrollPosition = scrollPosition;
+  }
+
+  // Method to update navigation bar and app bar visibility
+  void updateBarsVisibility(bool show) {
+    showNavigationBar.value = show;
+    showAppBar.value = show;
+  }
+
   // Clear all user data when logging out
   Future<void> clearUserData() async {
     await _prefs.clearUserData();
@@ -116,5 +160,6 @@ class ProfileController extends GetxController {
     hasCompletedOnboarding.value = false;
     karma.value = 0;
     redditAge.value = '';
+    photoUrl.value = '';
   }
 }

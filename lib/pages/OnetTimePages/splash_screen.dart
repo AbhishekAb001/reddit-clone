@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:reddit/pages/AuthPages/login_screen.dart';
-import 'package:reddit/pages/home_screen.dart';
-import 'package:reddit/service/shared_preferences_service.dart';
-import 'package:reddit/service/firestore_service.dart';
+import 'package:reddit/pages/HomePages/Navigation_screen.dart';
+import 'package:reddit/widgets/loading_screen.dart';
+import 'package:reddit/services/shared_preferences_service.dart';
+import 'package:reddit/services/firestore_service.dart';
 import 'package:reddit/pages/OnetTimePages/create_username_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -52,15 +53,31 @@ class _SplashScreenState extends State<SplashScreen>
             userData?['hasCompletedOnboarding'] ?? false;
 
         if (!hasCompletedOnboarding) {
-          Get.offAll(() => CreateUsernameScreen(uid: userId));
+          Get.offAll(
+            () => CreateUsernameScreen(uid: userId),
+            transition: Transition.fadeIn,
+            duration: const Duration(milliseconds: 500),
+          );
         } else {
-          Get.offAll(() => HomeScreen());
+          Get.offAll(
+            () => const LoadingScreen(),
+            transition: Transition.fadeIn,
+            duration: const Duration(milliseconds: 500),
+          );
         }
       } else {
-        Get.offAll(() => LoginScreen());
+        Get.offAll(
+          () => const LoginScreen(),
+          transition: Transition.fadeIn,
+          duration: const Duration(milliseconds: 500),
+        );
       }
     } else {
-      Get.offAll(() => LoginScreen());
+      Get.offAll(
+        () => const LoginScreen(),
+        transition: Transition.fadeIn,
+        duration: const Duration(milliseconds: 500),
+      );
     }
   }
 

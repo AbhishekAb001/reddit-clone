@@ -4,8 +4,8 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:reddit/pages/AuthPages/email_signup_screen.dart';
 import 'package:reddit/pages/AuthPages/phone_login_screen.dart';
-import 'package:reddit/pages/home_screen.dart';
-import 'package:reddit/service/auth_service.dart';
+import 'package:reddit/widgets/loading_screen.dart';
+import 'package:reddit/services/auth_service.dart';
 
 class EmailLoginScreen extends StatefulWidget {
   const EmailLoginScreen({super.key});
@@ -34,7 +34,11 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
       );
 
       if (userCredential != null) {
-        Get.offAll(() => HomeScreen());
+        Get.offAll(
+          () => const LoadingScreen(),
+          transition: Transition.fadeIn,
+          duration: const Duration(milliseconds: 500),
+        );
       } else {
         Get.snackbar(
           'Error',
@@ -55,7 +59,11 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
     try {
       final userCredential = await _authService.signInWithGoogle();
       if (userCredential != null) {
-        Get.offAll(() => HomeScreen());
+        Get.offAll(
+          () => const LoadingScreen(),
+          transition: Transition.fadeIn,
+          duration: const Duration(milliseconds: 500),
+        );
       }
     } finally {
       if (mounted) {
@@ -97,6 +105,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                 Get.to(
                   () => EmailSignUpScreen(),
                   transition: Transition.rightToLeft,
+                  duration: const Duration(milliseconds: 300),
                 );
               },
               child: Text(
@@ -146,16 +155,16 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                       Get.to(
                         () => PhoneLoginScreen(),
                         transition: Transition.rightToLeft,
+                        duration: const Duration(milliseconds: 300),
                       );
                     },
                   ),
                   SizedBox(height: screenHeight * 0.015),
                   _buildSocialButton(
                     icon: FontAwesomeIcons.google,
-                    text:
-                        _isGoogleLoading
-                            ? "Signing in..."
-                            : "Continue with Google",
+                    text: _isGoogleLoading
+                        ? "Signing in..."
+                        : "Continue with Google",
                     onTap: _isGoogleLoading ? null : _handleGoogleLogin,
                   ),
                   if (_errorMessage != null)
@@ -310,10 +319,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                     child: ElevatedButton(
                       onPressed: _isEmailLoading ? null : _handleLogin,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            _isEmailLoading
-                                ? Color(0xFF343536)
-                                : Colors.transparent,
+                        backgroundColor: _isEmailLoading
+                            ? Color(0xFF343536)
+                            : Colors.transparent,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(25),
                           side: const BorderSide(color: Colors.white),

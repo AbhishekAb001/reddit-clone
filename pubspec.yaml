@@ -1,32 +1,47 @@
 name: reddit
 description: "A new Flutter project."
 publish_to: 'none'
-version: 0.1.0
+version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.6 <4.0.0'
+  sdk: '>=3.2.3 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  font_awesome_flutter: ^10.8.0
-  get: ^4.6.5
-  google_fonts: ^6.2.1
+  font_awesome_flutter: ^10.6.0
+  get: ^4.6.6
+  google_fonts: ^6.1.0
   path_provider: ^2.1.2
-  shared_preferences: ^2.2.0
-  firebase_core: ^2.15.0
-  firebase_auth: ^4.7.2
+  shared_preferences: ^2.2.2
+  firebase_core: ^2.24.2
+  firebase_auth: ^4.15.3
+  firebase_storage: ^11.5.6
   google_sign_in: ^6.1.4
-  cloud_firestore: ^4.7.1
-
+  cloud_firestore: ^4.13.6
+  lottie: ^2.7.0
+  badges: ^3.1.2
+  http: ^1.2.0
+  google_generative_ai: ^0.2.0
+  flutter_gemini: ^3.0.0
+  shimmer: ^3.0.0
+  video_player: ^2.8.2
+  chewie: ^1.7.5
+  cached_network_image: ^3.3.1
+  carousel_slider: ^4.2.1
+  image_picker: ^1.0.7
+  html_unescape: ^2.0.0
+  avatar_plus: ^0.0.5
+  share_plus: ^11.0.0
+  url_launcher: ^6.2.5
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^2.0.0
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/ 
     - assets/images/
+    - assets/lottie/

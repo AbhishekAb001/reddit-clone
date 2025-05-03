@@ -1,10 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:get/get.dart';
-import 'package:reddit/service/shared_preferences_service.dart';
-import 'package:reddit/service/firestore_service.dart';
+import 'package:reddit/services/shared_preferences_service.dart';
+import 'package:reddit/services/firestore_service.dart';
 import 'package:reddit/pages/OnetTimePages/create_username_screen.dart';
-import 'package:reddit/pages/home_screen.dart';
+import 'package:reddit/widgets/loading_screen.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -172,11 +172,19 @@ class AuthService {
       final userData = await _firestore.getUserData(user.uid);
       final hasCompletedOnboarding =
           userData?['hasCompletedOnboarding'] ?? false;
-
+  
       if (!hasCompletedOnboarding) {
-        Get.to(() => CreateUsernameScreen(uid: user.uid));
+        Get.to(
+          () => CreateUsernameScreen(uid: user.uid),
+          transition: Transition.rightToLeft,
+          duration: const Duration(milliseconds: 300),
+        );
       } else {
-        Get.offAll(() => HomeScreen());
+        Get.offAll(
+          () => const LoadingScreen(),
+          transition: Transition.fadeIn,
+          duration: const Duration(milliseconds: 500),
+        );
       }
     }
   }

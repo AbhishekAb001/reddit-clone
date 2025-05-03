@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:reddit/pages/OnetTimePages/about_you_screen.dart';
-import 'package:reddit/service/firestore_service.dart';
+import 'package:reddit/services/firestore_service.dart';
+import 'package:reddit/widgets/loading_screen.dart';
 
 class InterestsScreen extends StatefulWidget {
   final String uid;
@@ -77,7 +78,11 @@ class _InterestsScreenState extends State<InterestsScreen> {
         widget.uid,
         _selectedInterests.toList(),
       );
-      Get.to(() => AboutYouScreen(uid: widget.uid));
+      Get.offAll(
+        () => const LoadingScreen(),
+        transition: Transition.fadeIn,
+        duration: const Duration(milliseconds: 500),
+      );
     } catch (e) {
       Get.snackbar(
         'Error',
@@ -107,7 +112,11 @@ class _InterestsScreenState extends State<InterestsScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              Get.to(() => AboutYouScreen(uid: widget.uid));
+              Get.to(
+                () => AboutYouScreen(uid: widget.uid),
+                transition: Transition.rightToLeft,
+                duration: const Duration(milliseconds: 300),
+              );
             },
             child: Text(
               'Skip',

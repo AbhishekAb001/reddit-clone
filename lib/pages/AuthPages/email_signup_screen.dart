@@ -6,8 +6,8 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:reddit/pages/AuthPages/email_login_screen.dart';
 import 'package:reddit/pages/AuthPages/phone_login_screen.dart';
-import 'package:reddit/pages/home_screen.dart';
-import 'package:reddit/service/auth_service.dart';
+import 'package:reddit/widgets/loading_screen.dart';
+import 'package:reddit/services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class EmailSignUpScreen extends StatefulWidget {
@@ -59,7 +59,11 @@ class _EmailSignUpScreenState extends State<EmailSignUpScreen> {
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
-      Get.to(() => EmailLoginScreen(), transition: Transition.rightToLeft);
+      Get.to(
+        () => EmailLoginScreen(),
+        transition: Transition.rightToLeft,
+        duration: const Duration(milliseconds: 300),
+      );
     } catch (e) {
       String errorMessage = 'An error occurred';
       if (e.toString().contains('email-already-in-use')) {
@@ -150,80 +154,80 @@ class _EmailSignUpScreenState extends State<EmailSignUpScreen> {
                     Get.to(
                       () => PhoneLoginScreen(),
                       transition: Transition.rightToLeft,
+                      duration: const Duration(milliseconds: 300),
                     );
                   },
                 ),
                 SizedBox(height: screenHeight * 0.015),
                 _buildSocialButton(
                   icon: FontAwesomeIcons.google,
-                  text:
-                      _isGoogleLoading
-                          ? "Signing in..."
-                          : "Continue with Google",
-                  onTap:
-                      _isGoogleLoading
-                          ? () {}
-                          : () async {
-                            setState(() => _isGoogleLoading = true);
-                            try {
-                              final userCredential =
-                                  await _authService.signInWithGoogle();
-                              if (userCredential != null) {
-                                log(
-                                  'Google Sign-In successful: ${userCredential.user?.email}',
-                                );
-                                if (mounted) {
-                                  Get.to(
-                                    () => HomeScreen(),
-                                    transition: Transition.rightToLeft,
-                                  );
-                                }
-                              }
-                            } catch (e) {
-                              log('Google Sign-In error: $e');
-                              String errorMessage =
-                                  'Failed to sign in with Google';
-
-                              if (e.toString().contains(
-                                'network-request-failed',
-                              )) {
-                                errorMessage =
-                                    'Please check your internet connection';
-                              } else if (e.toString().contains(
-                                'sign_in_canceled',
-                              )) {
-                                errorMessage = 'Sign in was canceled';
-                              } else if (e.toString().contains(
-                                    'List<Object?>',
-                                  ) ||
-                                  e.toString().contains('PigeonUserDetails')) {
-                                final currentUser =
-                                    FirebaseAuth.instance.currentUser;
-                                if (currentUser != null) {
-                                  log(
-                                    'User authenticated despite error, proceeding',
-                                  );
-                                  if (mounted) {
-                                    Get.offAllNamed('/home');
-                                  }
-                                  return;
-                                }
-                              }
-
+                  text: _isGoogleLoading
+                      ? "Signing in..."
+                      : "Continue with Google",
+                  onTap: _isGoogleLoading
+                      ? () {}
+                      : () async {
+                          setState(() => _isGoogleLoading = true);
+                          try {
+                            final userCredential =
+                                await _authService.signInWithGoogle();
+                            if (userCredential != null) {
+                              log(
+                                'Google Sign-In successful: ${userCredential.user?.email}',
+                              );
                               if (mounted) {
-                                Get.snackbar(
-                                  'Error',
-                                  errorMessage,
-                                  snackPosition: SnackPosition.BOTTOM,
-                                  colorText: Colors.white,
+                                Get.to(
+                                  () => const LoadingScreen(),
+                                  transition: Transition.fadeIn,
+                                  duration: const Duration(milliseconds: 500),
                                 );
-                              }
-                            } finally {
-                              if (mounted) {
-                                setState(() => _isGoogleLoading = false);
                               }
                             }
-                          },
+                          } catch (e) {
+                            log('Google Sign-In error: $e');
+                            String errorMessage =
+                                'Failed to sign in with Google';
+
+                            if (e.toString().contains(
+                                  'network-request-failed',
+                                )) {
+                              errorMessage =
+                                  'Please check your internet connection';
+                            } else if (e.toString().contains(
+                                  'sign_in_canceled',
+                                )) {
+                              errorMessage = 'Sign in was canceled';
+                            } else if (e.toString().contains(
+                                      'List<Object?>',
+                                    ) ||
+                                e.toString().contains('PigeonUserDetails')) {
+                              final currentUser =
+                                  FirebaseAuth.instance.currentUser;
+                              if (currentUser != null) {
+                                log(
+                                  'User authenticated despite error, proceeding',
+                                );
+                                if (mounted) {
+                                  Get.offAllNamed('/home');
+                                }
+                                return;
+                              }
+                            }
+
+                            if (mounted) {
+                              Get.snackbar(
+                                'Error',
+                                errorMessage,
+                                snackPosition: SnackPosition.BOTTOM,
+                                colorText: Colors.white,
+                              );
+                            }
+                          } finally {
+                            if (mounted) {
+                              setState(() => _isGoogleLoading = false);
+                            }
+                          }
+                        },
                 ),
                 SizedBox(height: screenHeight * 0.03),
                 Row(
@@ -310,7 +314,6 @@ class _EmailSignUpScreenState extends State<EmailSignUpScreen> {
                   ),
                 ),
                 SizedBox(height: screenHeight * 0.18),
-
                 RichText(
                   textAlign: TextAlign.center,
                   text: TextSpan(
@@ -340,7 +343,6 @@ class _EmailSignUpScreenState extends State<EmailSignUpScreen> {
                     ],
                   ),
                 ),
-
                 SizedBox(height: screenHeight * 0.02),
                 SizedBox(
                   width: double.infinity,
@@ -348,10 +350,9 @@ class _EmailSignUpScreenState extends State<EmailSignUpScreen> {
                   child: ElevatedButton(
                     onPressed: _isEmailLoading ? null : _signUp,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          _isEmailLoading
-                              ? Color(0xFF343536)
-                              : Colors.transparent,
+                      backgroundColor: _isEmailLoading
+                          ? Color(0xFF343536)
+                          : Colors.transparent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(25),
                         side: const BorderSide(color: Colors.white),

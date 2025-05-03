@@ -4,8 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'package:reddit/pages/AuthPages/email_login_screen.dart';
 import 'package:reddit/pages/AuthPages/phone_login_screen.dart';
-import 'package:reddit/pages/home_screen.dart';
-import 'package:reddit/service/auth_service.dart';
+import 'package:reddit/pages/HomePages/Navigation_screen.dart';
+import 'package:reddit/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

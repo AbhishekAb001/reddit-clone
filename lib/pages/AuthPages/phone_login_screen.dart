@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:reddit/service/auth_service.dart';
+import 'package:reddit/services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:reddit/pages/home_screen.dart';
+import 'package:reddit/widgets/loading_screen.dart';
 import 'package:reddit/pages/AuthPages/phone_verification_screen.dart';
 
 class PhoneLoginScreen extends StatefulWidget {
@@ -49,6 +49,8 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
             phoneNumber: phoneNumber,
             verificationId: verificationId,
           ),
+          transition: Transition.rightToLeft,
+          duration: const Duration(milliseconds: 300),
         );
       },
       (FirebaseAuthException e) {
@@ -67,7 +69,9 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
           credential.smsCode!,
         );
         if (userCredential != null) {
-          Get.offAll(() => HomeScreen());
+          Get.offAll(() => const LoadingScreen(),
+              transition: Transition.fadeIn,
+              duration: const Duration(milliseconds: 500));
         }
       },
       (String verificationId) {

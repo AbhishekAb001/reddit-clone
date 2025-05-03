@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:reddit/pages/OnetTimePages/interests_screen.dart';
-import 'package:reddit/service/firestore_service.dart';
+import 'package:reddit/services/firestore_service.dart';
 import 'dart:async';
 import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CreateUsernameScreen extends StatefulWidget {
   final String uid;
@@ -20,6 +21,7 @@ class CreateUsernameScreen extends StatefulWidget {
 
 class _CreateUsernameScreenState extends State<CreateUsernameScreen> {
   final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
   final FirestoreService _firestoreService = FirestoreService();
   bool _isValid = false;
   bool _isChecking = false;
@@ -68,13 +70,17 @@ class _CreateUsernameScreenState extends State<CreateUsernameScreen> {
   void initState() {
     super.initState();
     _usernameController.addListener(_onUsernameChanged);
+    _nameController.addListener(_onNameChanged);
     _generateInitialUsernames();
+    _checkExistingUserData();
   }
 
   @override
   void dispose() {
     _usernameController.removeListener(_onUsernameChanged);
+    _nameController.removeListener(_onNameChanged);
     _usernameController.dispose();
+    _nameController.dispose();
     _debounceTimer?.cancel();
     super.dispose();
   }
@@ -100,6 +106,29 @@ class _CreateUsernameScreenState extends State<CreateUsernameScreen> {
     return usernames;
   }
 
+  Future<void> _checkExistingUserData() async {
+    try {
+      final userData = await _firestoreService.getUserData(widget.uid);
+      if (userData != null) {
+        setState(() {
+          if (userData['displayName'] != null) {
+            _nameController.text = userData['displayName'];
+          }
+          if (userData['username'] != null) {
+            _usernameController.text = userData['username'];
+            _isValid = true;
+          }
+        });
+      }
+    } catch (e) {
+      print('Error checking existing user data: $e');
+    }
+  }
+
+  void _onNameChanged() {
+    // Add any name validation logic here if needed
+  }
+
   Future<void> _onUsernameChanged() async {
     if (_debounceTimer?.isActive ?? false) _debounceTimer?.cancel();
 
@@ -110,7 +139,7 @@ class _CreateUsernameScreenState extends State<CreateUsernameScreen> {
         setState(() {
           _isValid = false;
           _isChecking = false;
-          _errorMessage = null;
+          _errorMessage = 'Username cannot be empty';
         });
         return;
       }
@@ -124,12 +153,37 @@ class _CreateUsernameScreenState extends State<CreateUsernameScreen> {
         return;
       }
 
+      if (username.length > 20) {
+        setState(() {
+          _isValid = false;
+          _isChecking = false;
+          _errorMessage = 'Username must be less than 20 characters';
+        });
+        return;
+      }
+
       if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(username)) {
         setState(() {
           _isValid = false;
           _isChecking = false;
           _errorMessage =
               'Username can only contain letters, numbers, and underscores';
+        });
+        return;
+      }
+
+      final reservedWords = [
+        'admin',
+        'moderator',
+        'reddit',
+        'mod',
+        'administrator'
+      ];
+      if (reservedWords.contains(username.toLowerCase())) {
+        setState(() {
+          _isValid = false;
+          _isChecking = false;
+          _errorMessage = 'This username is reserved';
         });
         return;
       }
@@ -153,7 +207,8 @@ class _CreateUsernameScreenState extends State<CreateUsernameScreen> {
           setState(() {
             _isValid = false;
             _isChecking = false;
-            _errorMessage = 'Error checking username availability';
+            _errorMessage =
+                'Error checking username availability. Please try again.';
           });
         }
       }
@@ -172,19 +227,42 @@ class _CreateUsernameScreenState extends State<CreateUsernameScreen> {
     setState(() => _isSaving = true);
 
     try {
+      final exists = await _firestoreService
+          .checkUsernameExists(_usernameController.text.trim());
+      if (exists) {
+        setState(() {
+          _isValid = false;
+          _isSaving = false;
+          _errorMessage =
+              'This username was just taken. Please choose another one.';
+        });
+        return;
+      }
+
       await _firestoreService.updateUserData(widget.uid, {
         'username': _usernameController.text.trim(),
+        'displayName': _nameController.text.trim(),
+        'createdAt': FieldValue.serverTimestamp(),
       });
-      Get.to(() => InterestsScreen(uid: widget.uid));
+
+      if (mounted) {
+        Get.offAll(
+          () => InterestsScreen(uid: widget.uid),
+          transition: Transition.rightToLeft,
+          duration: const Duration(milliseconds: 300),
+        );
+      }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to save username. Please try again.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red[400],
-        colorText: Colors.white,
-      );
-      setState(() => _isSaving = false);
+      if (mounted) {
+        Get.snackbar(
+          'Error',
+          'Failed to save username. Please try again.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red[400],
+          colorText: Colors.white,
+        );
+        setState(() => _isSaving = false);
+      }
     }
   }
 
@@ -206,192 +284,240 @@ class _CreateUsernameScreenState extends State<CreateUsernameScreen> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: size.width * 0.06),
+          padding: EdgeInsets.symmetric(
+            horizontal: size.width * 0.06,
+          ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SizedBox(height: size.height * 0.015),
-              Center(
-                child: Image.asset(
-                  "assets/images/redit.png",
-                  width: size.width * 0.1,
-                  height: size.width * 0.1,
-                  color: const Color(0xFFFF4500),
-                ),
-              ),
-              SizedBox(height: size.height * 0.03),
-              Text(
-                'Create your username',
-                style: GoogleFonts.ibmPlexSans(
-                  fontSize: 24 * textScaleFactor,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              SizedBox(height: size.height * 0.01),
-              Text(
-                'Pick a name to use on Reddit. Choose carefully,\nyou won\'t be able to change it later.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.ibmPlexSans(
-                  fontSize: 14 * textScaleFactor,
-                  color: Colors.grey[400],
-                ),
-              ),
-              SizedBox(height: size.height * 0.03),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[900],
-                  borderRadius: BorderRadius.circular(size.width * 0.06),
-                ),
-                child: TextField(
-                  controller: _usernameController,
-                  style: GoogleFonts.ibmPlexSans(
-                    color: Colors.white,
-                    fontSize: 16 * textScaleFactor,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Username',
-                    hintStyle: GoogleFonts.ibmPlexSans(
-                      color: Colors.grey[600],
-                      fontSize: 16 * textScaleFactor,
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: size.width * 0.04,
-                      vertical: size.height * 0.015,
-                    ),
-                    suffixIcon: _isChecking
-                        ? SizedBox(
-                            width: size.width * 0.05,
-                            height: size.width * 0.05,
-                            child: Padding(
-                              padding: EdgeInsets.all(size.width * 0.03),
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Color(0xFFFF4500),
-                                ),
-                              ),
-                            ),
-                          )
-                        : _isValid
-                            ? Icon(Icons.check,
-                                color: Colors.green, size: size.width * 0.06)
-                            : _usernameController.text.isNotEmpty
-                                ? Icon(Icons.close,
-                                    color: Colors.red, size: size.width * 0.06)
-                                : null,
-                  ),
-                ),
-              ),
-              if (_errorMessage != null)
-                Padding(
-                  padding: EdgeInsets.only(top: size.height * 0.01),
-                  child: Text(
-                    _errorMessage!,
-                    style: GoogleFonts.ibmPlexSans(
-                      color: Colors.red,
-                      fontSize: 14 * textScaleFactor,
-                    ),
-                  ),
-                ),
-              if (_isValid)
-                Padding(
-                  padding: EdgeInsets.only(top: size.height * 0.01),
-                  child: Text(
-                    'Great name! It\'s not taken, so it\'s all yours.',
-                    style: GoogleFonts.ibmPlexSans(
-                      color: Colors.green,
-                      fontSize: 14 * textScaleFactor,
-                    ),
-                  ),
-                ),
-              SizedBox(height: size.height * 0.03),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Suggested usernames:',
-                    style: GoogleFonts.ibmPlexSans(
-                      color: Colors.grey[400],
-                      fontSize: 14 * textScaleFactor,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: _generateMoreUsernames,
-                    child: Text(
-                      'Generate more',
-                      style: GoogleFonts.ibmPlexSans(
-                        color: Color(0xFFFF4500),
-                        fontSize: 14 * textScaleFactor,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: size.height * 0.02),
-              ...suggestedUsernames.map((username) => Padding(
-                    padding: EdgeInsets.only(bottom: size.height * 0.01),
-                    child: InkWell(
-                      onTap: () {
-                        _usernameController.text = username;
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: size.width * 0.04,
-                          vertical: size.height * 0.015,
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(height: size.height * 0.015),
+                      Center(
+                        child: Image.asset(
+                          "assets/images/redit.png",
+                          width: size.width * 0.1,
+                          height: size.width * 0.1,
+                          color: const Color(0xFFFF4500),
                         ),
+                      ),
+                      SizedBox(height: size.height * 0.03),
+                      Text(
+                        'Create your profile',
+                        style: GoogleFonts.ibmPlexSans(
+                          fontSize: 24 * textScaleFactor,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(height: size.height * 0.01),
+                      Text(
+                        'Add your name and choose a username for Reddit.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.ibmPlexSans(
+                          fontSize: 14 * textScaleFactor,
+                          color: Colors.grey[400],
+                        ),
+                      ),
+                      SizedBox(height: size.height * 0.03),
+                      Container(
                         decoration: BoxDecoration(
                           color: Colors.grey[900],
                           borderRadius:
                               BorderRadius.circular(size.width * 0.06),
                         ),
-                        child: Text(
-                          username,
-                          style: GoogleFonts.ibmPlexSans(
-                            color: Colors.grey[300],
-                            fontSize: 14 * textScaleFactor,
-                          ),
-                        ),
-                      ),
-                    ),
-                  )),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                height: size.height * 0.06,
-                child: ElevatedButton(
-                  onPressed: _isValid ? _saveUsername : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        _isValid ? Color(0xFFFF4500) : Colors.grey[800],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(size.width * 0.06),
-                    ),
-                  ),
-                  child: _isSaving
-                      ? SizedBox(
-                          width: size.width * 0.05,
-                          height: size.width * 0.05,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                      : Text(
-                          'Continue',
+                        child: TextField(
+                          controller: _nameController,
                           style: GoogleFonts.ibmPlexSans(
                             color: Colors.white,
                             fontSize: 16 * textScaleFactor,
-                            fontWeight: FontWeight.bold,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Your Name',
+                            hintStyle: GoogleFonts.ibmPlexSans(
+                              color: Colors.grey[600],
+                              fontSize: 16 * textScaleFactor,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: size.width * 0.04,
+                              vertical: size.height * 0.015,
+                            ),
                           ),
                         ),
+                      ),
+                      SizedBox(height: size.height * 0.02),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey[900],
+                          borderRadius:
+                              BorderRadius.circular(size.width * 0.06),
+                        ),
+                        child: TextField(
+                          controller: _usernameController,
+                          style: GoogleFonts.ibmPlexSans(
+                            color: Colors.white,
+                            fontSize: 16 * textScaleFactor,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Username',
+                            hintStyle: GoogleFonts.ibmPlexSans(
+                              color: Colors.grey[600],
+                              fontSize: 16 * textScaleFactor,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: size.width * 0.04,
+                              vertical: size.height * 0.015,
+                            ),
+                            suffixIcon: _isChecking
+                                ? SizedBox(
+                                    width: size.width * 0.05,
+                                    height: size.width * 0.05,
+                                    child: Padding(
+                                      padding:
+                                          EdgeInsets.all(size.width * 0.03),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                          Color(0xFFFF4500),
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : _isValid
+                                    ? Icon(Icons.check,
+                                        color: Colors.green,
+                                        size: size.width * 0.06)
+                                    : _usernameController.text.isNotEmpty
+                                        ? Icon(Icons.close,
+                                            color: Colors.red,
+                                            size: size.width * 0.06)
+                                        : null,
+                          ),
+                        ),
+                      ),
+                      if (_errorMessage != null)
+                        Padding(
+                          padding: EdgeInsets.only(top: size.height * 0.01),
+                          child: Text(
+                            _errorMessage!,
+                            style: GoogleFonts.ibmPlexSans(
+                              color: Colors.red,
+                              fontSize: 14 * textScaleFactor,
+                            ),
+                          ),
+                        ),
+                      if (_isValid)
+                        Padding(
+                          padding: EdgeInsets.only(top: size.height * 0.01),
+                          child: Text(
+                            'Great name! It\'s not taken, so it\'s all yours.',
+                            style: GoogleFonts.ibmPlexSans(
+                              color: Colors.green,
+                              fontSize: 14 * textScaleFactor,
+                            ),
+                          ),
+                        ),
+                      SizedBox(height: size.height * 0.03),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Suggested usernames:',
+                            style: GoogleFonts.ibmPlexSans(
+                              color: Colors.grey[400],
+                              fontSize: 14 * textScaleFactor,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: _generateMoreUsernames,
+                            child: Text(
+                              'Generate more',
+                              style: GoogleFonts.ibmPlexSans(
+                                color: Color(0xFFFF4500),
+                                fontSize: 14 * textScaleFactor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: size.height * 0.02),
+                      ...suggestedUsernames.map((username) => Padding(
+                            padding:
+                                EdgeInsets.only(bottom: size.height * 0.01),
+                            child: InkWell(
+                              onTap: () {
+                                _usernameController.text = username;
+                              },
+                              child: Container(
+                                width: double.infinity,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: size.width * 0.04,
+                                  vertical: size.height * 0.015,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[900],
+                                  borderRadius:
+                                      BorderRadius.circular(size.width * 0.06),
+                                ),
+                                child: Text(
+                                  username,
+                                  style: GoogleFonts.ibmPlexSans(
+                                    color: Colors.grey[300],
+                                    fontSize: 14 * textScaleFactor,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          )),
+                      SizedBox(height: size.height * 0.02),
+                    ],
+                  ),
                 ),
               ),
-              SizedBox(height: size.height * 0.02),
+              Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom +
+                      size.height * 0.02,
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: size.height * 0.06,
+                  child: ElevatedButton(
+                    onPressed: _isValid ? _saveUsername : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          _isValid ? Color(0xFFFF4500) : Colors.grey[800],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(size.width * 0.06),
+                      ),
+                    ),
+                    child: _isSaving
+                        ? SizedBox(
+                            width: size.width * 0.05,
+                            height: size.width * 0.05,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : Text(
+                            'Continue',
+                            style: GoogleFonts.ibmPlexSans(
+                              color: Colors.white,
+                              fontSize: 16 * textScaleFactor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
