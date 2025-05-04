@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:reddit/pages/HomePages/answers_screen.dart';
-import 'package:reddit/widgets/create_post_screen.dart';
 import 'package:reddit/pages/HomePages/chat_screen.dart';
 import 'package:reddit/pages/HomePages/inbox_screen.dart';
 import 'package:reddit/pages/AuthPages/login_screen.dart';
@@ -20,7 +19,8 @@ import 'package:reddit/pages/Drawer/saved_drawer_page.dart';
 import 'package:reddit/pages/Drawer/history_drawer_page.dart';
 import 'package:reddit/pages/Drawer/premium_drawer_page.dart';
 import 'package:avatar_plus/avatar_plus.dart';
-import 'package:reddit/pages/HomePages/create_avatar_page.dart';
+import 'package:reddit/pages/Drawer/create_avatar_page.dart';
+import 'package:reddit/pages/HomePages/create_post_screen.dart';
 
 class NavigationScreen extends StatefulWidget {
   const NavigationScreen({super.key});
@@ -52,7 +52,7 @@ class _NavigationScreenState extends State<NavigationScreen>
       showBarsNotifier: ValueNotifier<bool>(true),
     ),
     const AnswersScreen(),
-    const CreatePostScreen(),
+    const SizedBox(),
     const ChatScreen(),
     const InboxScreen(),
   ];
@@ -149,6 +149,15 @@ class _NavigationScreenState extends State<NavigationScreen>
 
   void _onItemTapped(int index) {
     setState(() {
+      if (index == 2) {
+        // Navigate to the new CreatePostScreen
+        Get.to(
+          () => const CreatePostScreen(),
+          transition: Transition.rightToLeft,
+          duration: const Duration(milliseconds: 300),
+        );
+        return;
+      }
       _selectedIndex = index;
     });
   }
@@ -401,8 +410,20 @@ class _NavigationScreenState extends State<NavigationScreen>
               children: [
                 Icon(Icons.star, size: 18, color: Colors.orangeAccent),
                 SizedBox(width: 4),
-                Obx(() => Text('${_profileController.karma.value} Karma',
-                    style: TextStyle(fontSize: 14, color: Colors.white))),
+                GestureDetector(
+                  onTap: () {
+                    Get.snackbar(
+                      'Coming Soon!',
+                      'Detailed karma breakdown and achievements will be available in a future update.',
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: Colors.blue[800],
+                      colorText: Colors.white,
+                    );
+                  },
+                  child: Obx(() => Text(
+                      '${_profileController.karma.value} Karma',
+                      style: TextStyle(fontSize: 14, color: Colors.white))),
+                ),
                 SizedBox(width: 16),
                 Icon(Icons.calendar_today,
                     size: 18, color: Colors.lightBlueAccent),
@@ -418,9 +439,25 @@ class _NavigationScreenState extends State<NavigationScreen>
               children: [
                 Icon(Icons.emoji_events, color: Colors.amberAccent, size: 18),
                 SizedBox(width: 4),
-                Text('5 Achievements',
-                    style: TextStyle(fontSize: 14, color: Colors.white)),
-                Icon(Icons.chevron_right, color: Colors.white54, size: 18),
+                GestureDetector(
+                  onTap: () {
+                    Get.snackbar(
+                      'Coming Soon!',
+                      'User achievements tracking and display will be available in a future update.',
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: Colors.blue[800],
+                      colorText: Colors.white,
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      Text('5 Achievements',
+                          style: TextStyle(fontSize: 14, color: Colors.white)),
+                      Icon(Icons.chevron_right,
+                          color: Colors.white54, size: 18),
+                    ],
+                  ),
+                ),
               ],
             ),
             SizedBox(height: 16),
@@ -466,7 +503,16 @@ class _NavigationScreenState extends State<NavigationScreen>
                       fontWeight: FontWeight.w500, color: Colors.white)),
               subtitle: Text('0 gold earned',
                   style: TextStyle(fontSize: 12, color: Colors.white70)),
-              onTap: () {},
+              onTap: () {
+                // Show coming soon notification
+                Get.snackbar(
+                  'Coming Soon!',
+                  'Contributor program achievements and karma display functionality will be available in a future update.',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.blue[800],
+                  colorText: Colors.white,
+                );
+              },
             ),
             ListTile(
               leading: Icon(Icons.bookmark_border, color: Colors.white),

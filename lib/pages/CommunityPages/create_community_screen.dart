@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:reddit/controller/community_controller.dart';
+import 'dart:developer' as developer;
 
 class CreateCommunityScreen extends StatefulWidget {
   const CreateCommunityScreen({super.key});
@@ -18,6 +20,11 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   final List<String> _selectedTopics = [];
   String? _communityNameError;
+  bool _isCreating = false;
+
+  // Get community controller
+  final CommunityController _communityController =
+      Get.find<CommunityController>();
 
   @override
   void dispose() {
@@ -49,6 +56,93 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
       setState(() => _currentStep--);
     } else {
       Get.back();
+    }
+  }
+
+  Future<void> _createCommunity() async {
+    try {
+      // Set loading state
+      setState(() {
+        _isCreating = true;
+      });
+
+      developer.log('=============== CREATE COMMUNITY SCREEN ===============');
+      developer.log('Step 1: Starting community creation process...');
+
+      // Get community name without r/ prefix
+      String communityName = _communityNameController.text;
+      developer.log('Original community name input: $communityName');
+
+      if (communityName.startsWith('r/')) {
+        communityName = communityName.substring(2);
+        developer.log('Removed r/ prefix, community name: $communityName');
+      }
+
+      developer.log('Community name: $communityName');
+      developer.log('Description: ${_descriptionController.text}');
+      developer.log('Selected topics: $_selectedTopics');
+      developer.log('Current step: $_currentStep of $_totalSteps');
+
+      // Validate input again
+      if (communityName.isEmpty) {
+        developer.log('Error: Community name is empty');
+        throw Exception('Community name cannot be empty');
+      }
+
+      developer
+          .log('Step 2: Input validated, calling controller.createCommunity()');
+
+      // Create community
+      await _communityController.createCommunity(
+        name: communityName,
+        description: _descriptionController.text,
+        topics: _selectedTopics,
+        type: 'public', // Default to public
+        isMature: false, // Default to not mature
+      );
+
+      developer.log('Step 3: Community created successfully by controller!');
+
+      // Show success message
+      developer.log('Step 4: Showing success message and navigating back');
+      Get.snackbar(
+        'Success',
+        'Community created successfully!',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+
+      // Go back to previous screen
+      developer.log('Step 5: Navigating back...');
+      Get.back();
+      developer
+          .log('=============== CREATE COMMUNITY COMPLETED ===============');
+    } catch (e, stackTrace) {
+      // Log and show error
+      developer.log('=============== CREATE COMMUNITY ERROR ===============');
+      developer.log('Error creating community: $e');
+      developer.log('Stack trace: $stackTrace');
+
+      Get.snackbar(
+        'Error',
+        'Failed to create community: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 5),
+      );
+      developer.log('Error message displayed to user');
+    } finally {
+      // Reset loading state
+      developer.log('Resetting loading state');
+      if (mounted) {
+        setState(() {
+          _isCreating = false;
+        });
+      }
+      developer.log('Loading state reset complete');
     }
   }
 
@@ -377,22 +471,33 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: _currentStep == _totalSteps
-                ? () {
-                    // TODO: Implement community creation
-                    Get.back();
-                  }
-                : _nextStep,
-            child: Text(
-              _currentStep == _totalSteps ? 'Create' : 'Next',
-              style: GoogleFonts.inter(
-                color: Colors.blue,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+          _isCreating
+              ? Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  ),
+                )
+              : TextButton(
+                  onPressed: _currentStep == _totalSteps
+                      ? () => _createCommunity()
+                      : _nextStep,
+                  child: Text(
+                    _currentStep == _totalSteps ? 'Create' : 'Next',
+                    style: GoogleFonts.inter(
+                      color: Colors.blue,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
         ],
       ),
       body: SingleChildScrollView(

@@ -7,7 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:reddit/pages/AuthPages/email_login_screen.dart';
 import 'package:reddit/pages/AuthPages/phone_login_screen.dart';
 import 'package:reddit/widgets/loading_screen.dart';
-import 'package:reddit/services/auth_service.dart';
+import 'package:reddit/pages/PostPages/services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class EmailSignUpScreen extends StatefulWidget {

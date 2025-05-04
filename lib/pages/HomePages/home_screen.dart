@@ -71,7 +71,6 @@ class _HomeScreenState extends State<HomeScreen>
     final isUserCreated = _communityController.userCommunities
         .any((community) => community.name == post.subreddit);
 
-    log('isUserCreated: $isUserCreated');
     // Navigate to appropriate screen
     if (isUserCreated) {
       Get.to(

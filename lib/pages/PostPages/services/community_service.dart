@@ -3,7 +3,6 @@ import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:reddit/model/Community.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -26,9 +25,12 @@ class CommunityService {
 
   Future<void> createCommunity(Community community) async {
     try {
-      print('Starting community creation in service...');
-      print(
-          'Community images - Banner: ${community.bannerImg}, Avatar: ${community.iconImg}');
+      log('Starting community creation in service...');
+      log('Community data: ${community.toJson()}');
+      log('Community ID: ${community.id}');
+      log('Community name: ${community.name}');
+      log('Created by: ${community.createdBy}');
+      log('Community images - Banner: ${community.bannerImg}, Avatar: ${community.iconImg}');
 
       // Convert community to JSON and add required fields
       final Map<String, dynamic> communityData = {
@@ -39,31 +41,72 @@ class CommunityService {
         'updated_at': FieldValue.serverTimestamp(),
       };
 
-      print('Community data prepared: $communityData');
+      log('Community data prepared: $communityData');
+
+      try {
+        log('Checking if user document exists...');
+        final userDoc =
+            await _firestore.collection('users').doc(community.createdBy).get();
+        if (!userDoc.exists) {
+          log('User document does not exist, will need to create it');
+        } else {
+          log('User document exists: ${userDoc.data()}');
+        }
+      } catch (e) {
+        log('Error checking user document: $e');
+      }
 
       // Create batch
+      log('Creating batch operation...');
       final batch = _firestore.batch();
 
       // Add community document
       final communityRef =
           _firestore.collection('communities').doc(community.id);
+      log('Setting community document at communities/${community.id}');
       batch.set(communityRef, communityData);
 
       // Update user document
       final userRef = _firestore.collection('users').doc(community.createdBy);
-      batch.update(userRef, {
-        'communities': FieldValue.arrayUnion([community.id]),
-        'created_communities': FieldValue.arrayUnion([community.id]),
-      });
+      log('Updating user document at users/${community.createdBy}');
+
+      try {
+        // First check if user document exists
+        final userDoc = await userRef.get();
+        if (!userDoc.exists) {
+          log('User document does not exist, creating it first');
+          // Create user document first
+          batch.set(userRef, {
+            'communities': [community.id],
+            'created_communities': [community.id],
+            'userId': community.createdBy,
+            'created_at': FieldValue.serverTimestamp(),
+          });
+        } else {
+          // Update existing user document
+          log('Updating existing user document');
+          batch.update(userRef, {
+            'communities': FieldValue.arrayUnion([community.id]),
+            'created_communities': FieldValue.arrayUnion([community.id]),
+          });
+        }
+      } catch (e) {
+        log('Error handling user document: $e');
+        throw e;
+      }
 
       // Commit changes
+      log('Committing batch operations...');
       await batch.commit();
-      print('Community created successfully in Firebase');
+      log('Community created successfully in Firebase');
 
       // Update local list
+      log('Updating local list with new community');
       _createdCommunities.add(community);
-    } catch (e) {
-      print('Error in community service: $e');
+      log('Added community to local list, current count: ${_createdCommunities.length}');
+    } catch (e, stackTrace) {
+      log('Error in community service: $e');
+      log('Stack trace: $stackTrace');
       rethrow;
     }
   }
@@ -140,13 +183,9 @@ class CommunityService {
         },
       );
 
-      log('Reddit API Response Status: ${response.statusCode}');
-      log('Reddit API Response Body: ${response.body}');
-
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
         if (jsonData['data'] == null) {
-          log('No data found in Reddit API response');
           return null;
         }
 
@@ -203,10 +242,8 @@ class CommunityService {
           bannerImg: bannerImg,
         );
       } else if (response.statusCode == 404) {
-        log('Community not found on Reddit: $cleanName');
         return null;
       } else {
-        log('Reddit API error: ${response.statusCode} - ${response.body}');
         // Fall back to Firebase
         return _fetchFromFirebase(cleanName);
       }

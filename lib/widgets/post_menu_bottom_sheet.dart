@@ -8,12 +8,22 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
-import 'package:reddit/pages/PostPages/comment_thread_page.dart';
+import 'package:reddit/pages/PostPages/post_comment_screen.dart';
+import 'package:reddit/controller/profile_controller.dart';
+import 'package:reddit/model/reddit_post.dart';
 
-void showPostMenuBottomSheet(BuildContext context,
-    {String? postUrl, String? postId, String? subreddit}) {
+void showPostMenuBottomSheet(
+  BuildContext context, {
+  RedditPost? postDetails,
+  String? postId,
+  String? subreddit,
+  String? postTitle,
+  String? postUrl,
+  String? postThumbnail,
+}) {
   final screenWidth = MediaQuery.of(context).size.width;
   final screenHeight = MediaQuery.of(context).size.height;
+  final profileController = Get.find<ProfileController>();
 
   showModalBottomSheet(
     context: context,
@@ -56,8 +66,14 @@ void showPostMenuBottomSheet(BuildContext context,
                   if (postId != null) {
                     // Navigate to comments page
                     Get.to(
-                      () => CommentThreadPage(
-                          postId: postId, subreddit: subreddit),
+                      () => PostCommentScreen(
+                        postId: postId,
+                        postDetails: postDetails,
+                        postTitle: postTitle,
+                        postUrl: postUrl,
+                        postThumbnail: postThumbnail,
+                        subreddit: subreddit,
+                      ),
                       transition: Transition.rightToLeft,
                       duration: const Duration(milliseconds: 300),
                     );
@@ -71,17 +87,40 @@ void showPostMenuBottomSheet(BuildContext context,
                 onTap: () {
                   // Follow post implementation
                   Navigator.pop(context);
+                  Get.snackbar(
+                    'Coming Soon',
+                    'Follow post functionality will be available soon',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.blue.withOpacity(0.7),
+                    colorText: Colors.white,
+                    duration: Duration(seconds: 2),
+                  );
                 },
               ),
-              _buildMenuItem(
-                context: context,
-                icon: Icons.bookmark_border_outlined,
-                label: 'Save',
-                onTap: () {
-                  // Save post implementation
-                  Navigator.pop(context);
-                },
-              ),
+              Obx(() {
+                final isSaved = postId != null
+                    ? profileController.isPostSaved(postId)
+                    : false;
+                return _buildMenuItem(
+                  context: context,
+                  icon:
+                      isSaved ? Icons.bookmark : Icons.bookmark_border_outlined,
+                  label: isSaved ? 'Unsave' : 'Save',
+                  onTap: () {
+                    if (postId != null) {
+                      profileController.toggleSavePost(postId);
+                    }
+                    Navigator.pop(context);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(isSaved ? 'Post unsaved' : 'Post saved'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                );
+              }),
               _buildMenuItem(
                 context: context,
                 icon: Icons.person_off_outlined,
@@ -89,6 +128,14 @@ void showPostMenuBottomSheet(BuildContext context,
                 onTap: () {
                   // Block account implementation
                   Navigator.pop(context);
+                  Get.snackbar(
+                    'Coming Soon',
+                    'Block account functionality will be available soon',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.blue.withOpacity(0.7),
+                    colorText: Colors.white,
+                    duration: Duration(seconds: 2),
+                  );
                 },
               ),
               _buildMenuItem(
@@ -98,6 +145,14 @@ void showPostMenuBottomSheet(BuildContext context,
                 onTap: () {
                   // Report implementation
                   Navigator.pop(context);
+                  Get.snackbar(
+                    'Coming Soon',
+                    'Report functionality will be available soon',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.blue.withOpacity(0.7),
+                    colorText: Colors.white,
+                    duration: Duration(seconds: 2),
+                  );
                 },
               ),
               _buildMenuItem(
@@ -107,6 +162,14 @@ void showPostMenuBottomSheet(BuildContext context,
                 onTap: () {
                   // Hide implementation
                   Navigator.pop(context);
+                  Get.snackbar(
+                    'Coming Soon',
+                    'Hide post functionality will be available soon',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.blue.withOpacity(0.7),
+                    colorText: Colors.white,
+                    duration: Duration(seconds: 2),
+                  );
                 },
               ),
               _buildMenuItem(
@@ -116,6 +179,50 @@ void showPostMenuBottomSheet(BuildContext context,
                 onTap: () {
                   // Copy text implementation
                   Navigator.pop(context);
+
+                  // Create a comprehensive text to copy, including title and content
+                  String textToCopy = '';
+
+                  if (postTitle != null && postTitle!.isNotEmpty) {
+                    textToCopy += postTitle!;
+                  }
+
+                  if (postDetails?.selfText != null &&
+                      postDetails!.selfText.isNotEmpty) {
+                    if (textToCopy.isNotEmpty) {
+                      textToCopy += '\n\n';
+                    }
+                    textToCopy += postDetails!.selfText;
+                  }
+
+                  // If we have a URL but no other content, include the URL
+                  if (textToCopy.isEmpty &&
+                      postUrl != null &&
+                      postUrl!.isNotEmpty) {
+                    textToCopy = postUrl!;
+                  }
+
+                  if (textToCopy.isNotEmpty) {
+                    Clipboard.setData(ClipboardData(text: textToCopy));
+                    Get.snackbar(
+                      'Success',
+                      'Post content copied to clipboard',
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: Colors.green.withOpacity(0.7),
+                      colorText: Colors.white,
+                      duration: Duration(seconds: 2),
+                    );
+                  } else {
+                    // If no text content could be found at all
+                    Get.snackbar(
+                      'Note',
+                      'This post has no text content to copy',
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: Colors.orange.withOpacity(0.7),
+                      colorText: Colors.white,
+                      duration: Duration(seconds: 2),
+                    );
+                  }
                 },
               ),
               _buildMenuItem(
@@ -125,6 +232,29 @@ void showPostMenuBottomSheet(BuildContext context,
                 onTap: () {
                   // Crosspost implementation
                   Navigator.pop(context);
+                  Get.snackbar(
+                    'Coming Soon',
+                    'Crosspost functionality will be available soon',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.blue.withOpacity(0.7),
+                    colorText: Colors.white,
+                    duration: Duration(seconds: 2),
+                  );
+                },
+              ),
+              _buildMenuItem(
+                context: context,
+                icon: Icons.share,
+                label: 'Share',
+                onTap: () {
+                  Navigator.pop(context);
+                  // Open the enhanced share bottom sheet
+                  showShareBottomSheet(
+                    context,
+                    postUrl: postUrl,
+                    postTitle: postTitle,
+                    postDetails: postDetails,
+                  );
                 },
               ),
             ],
@@ -135,12 +265,20 @@ void showPostMenuBottomSheet(BuildContext context,
   );
 }
 
-void showShareBottomSheet(BuildContext context, {String? postUrl}) {
+void showShareBottomSheet(
+  BuildContext context, {
+  String? postUrl,
+  String? postTitle,
+  RedditPost? postDetails,
+}) {
   final screenWidth = MediaQuery.of(context).size.width;
   final screenHeight = MediaQuery.of(context).size.height;
 
   // Default post URL if none provided
   final url = postUrl ?? 'https://reddit.com/';
+
+  // Automatically copy URL to clipboard for convenience
+  Clipboard.setData(ClipboardData(text: url));
 
   showModalBottomSheet(
     context: context,
@@ -151,6 +289,18 @@ void showShareBottomSheet(BuildContext context, {String? postUrl}) {
           BorderRadius.vertical(top: Radius.circular(screenWidth * 0.05)),
     ),
     builder: (context) {
+      // Show snackbar after bottom sheet is built
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.snackbar(
+          'Copied',
+          'Post URL copied to clipboard',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green.withOpacity(0.7),
+          colorText: Colors.white,
+          duration: Duration(seconds: 2),
+        );
+      });
+
       return SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.only(
@@ -230,13 +380,57 @@ void showShareBottomSheet(BuildContext context, {String? postUrl}) {
                 onTap: () {
                   // Copy link implementation with Clipboard
                   Clipboard.setData(ClipboardData(text: url));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Link copied to clipboard'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
                   Navigator.pop(context);
+                  Get.snackbar(
+                    'Success',
+                    'Link copied to clipboard again',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.green.withOpacity(0.7),
+                    colorText: Colors.white,
+                    duration: Duration(seconds: 2),
+                  );
+                },
+              ),
+              _buildMenuItem(
+                context: context,
+                icon: Icons.content_copy_outlined,
+                label: 'Copy post content',
+                onTap: () {
+                  // Copy text implementation
+                  Navigator.pop(context);
+
+                  // Create a comprehensive text to copy, including title and content
+                  String textToCopy = '';
+
+                  if (postTitle != null && postTitle!.isNotEmpty) {
+                    textToCopy += postTitle!;
+                  }
+
+                  if (postDetails?.selfText != null &&
+                      postDetails!.selfText.isNotEmpty) {
+                    if (textToCopy.isNotEmpty) {
+                      textToCopy += '\n\n';
+                    }
+                    textToCopy += postDetails!.selfText;
+                  }
+
+                  // If we have a URL but no other content, include the URL
+                  if (textToCopy.isEmpty) {
+                    textToCopy = url;
+                  } else {
+                    // Add URL at the end if we have other content
+                    textToCopy += '\n\n' + url;
+                  }
+
+                  Clipboard.setData(ClipboardData(text: textToCopy));
+                  Get.snackbar(
+                    'Success',
+                    'Post content copied to clipboard',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.green.withOpacity(0.7),
+                    colorText: Colors.white,
+                    duration: Duration(seconds: 2),
+                  );
                 },
               ),
               _buildMenuItem(
@@ -246,11 +440,13 @@ void showShareBottomSheet(BuildContext context, {String? postUrl}) {
                 onTap: () {
                   Navigator.pop(context);
                   // Would navigate to chat screen with pre-filled message
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Opening chat with link...'),
-                      duration: Duration(seconds: 2),
-                    ),
+                  Get.snackbar(
+                    'Coming Soon',
+                    'Chat functionality will be available soon',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.blue.withOpacity(0.7),
+                    colorText: Colors.white,
+                    duration: Duration(seconds: 2),
                   );
                   // Navigation code would go here
                 },
@@ -275,11 +471,24 @@ void showShareBottomSheet(BuildContext context, {String? postUrl}) {
                         '$result\n\n$url',
                         subject: 'Reddit post with my note',
                       );
+                      Get.snackbar(
+                        'Success',
+                        'Post shared with your note',
+                        snackPosition: SnackPosition.BOTTOM,
+                        backgroundColor: Colors.green.withOpacity(0.7),
+                        colorText: Colors.white,
+                        duration: Duration(seconds: 2),
+                      );
                     }
                   } catch (e) {
                     log('Share with note error: ${e.toString()}');
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error sharing with note')),
+                    Get.snackbar(
+                      'Error',
+                      'Failed to share with note',
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: Colors.red.withOpacity(0.7),
+                      colorText: Colors.white,
+                      duration: Duration(seconds: 2),
                     );
                   }
                 },
@@ -295,24 +504,77 @@ void showShareBottomSheet(BuildContext context, {String? postUrl}) {
 // Dialog to add a note to the shared content
 Widget _buildAddNoteDialog(BuildContext context, String url) {
   final TextEditingController noteController = TextEditingController();
+  final screenWidth = MediaQuery.of(context).size.width;
+  final screenHeight = MediaQuery.of(context).size.height;
 
   return AlertDialog(
-    title: Text('Add a note'),
-    content: TextField(
-      controller: noteController,
-      decoration: InputDecoration(
-        hintText: 'Write a note to add to your share...',
+    backgroundColor: Colors.grey[900],
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+    ),
+    title: Text(
+      'Add a note',
+      style: GoogleFonts.inter(
+        color: Colors.white,
+        fontSize: screenWidth * 0.045,
+        fontWeight: FontWeight.w600,
       ),
-      maxLines: 3,
+    ),
+    content: Container(
+      width: screenWidth * 0.8,
+      padding: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
+      child: TextField(
+        controller: noteController,
+        style: GoogleFonts.inter(
+          color: Colors.white,
+          fontSize: screenWidth * 0.035,
+        ),
+        decoration: InputDecoration(
+          hintText: 'Write a note to add to your share...',
+          hintStyle: GoogleFonts.inter(
+            color: Colors.grey[400],
+            fontSize: screenWidth * 0.035,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(screenWidth * 0.02),
+            borderSide: BorderSide(color: Colors.grey[700]!),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(screenWidth * 0.02),
+            borderSide: BorderSide(color: Colors.grey[700]!),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(screenWidth * 0.02),
+            borderSide: BorderSide(color: Colors.grey[500]!),
+          ),
+          filled: true,
+          fillColor: Colors.grey[800],
+          contentPadding: EdgeInsets.all(screenWidth * 0.03),
+        ),
+        maxLines: 3,
+      ),
     ),
     actions: [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: Text('Cancel'),
+        child: Text(
+          'Cancel',
+          style: GoogleFonts.inter(
+            color: Colors.grey[400],
+            fontSize: screenWidth * 0.035,
+          ),
+        ),
       ),
       TextButton(
         onPressed: () => Navigator.pop(context, noteController.text),
-        child: Text('Share'),
+        child: Text(
+          'Share',
+          style: GoogleFonts.inter(
+            color: Colors.blue,
+            fontSize: screenWidth * 0.035,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
     ],
   );
@@ -404,14 +666,35 @@ void _shareToFacebook(BuildContext context, String url) async {
 
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+      Get.snackbar(
+        'Success',
+        'Opening Facebook to share post',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green.withOpacity(0.7),
+        colorText: Colors.white,
+        duration: Duration(seconds: 2),
+      );
     } else {
       // Fallback
       await Share.share('Check out this post: $url');
+      Get.snackbar(
+        'Success',
+        'Shared using system share',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green.withOpacity(0.7),
+        colorText: Colors.white,
+        duration: Duration(seconds: 2),
+      );
     }
   } catch (e) {
     log('Facebook share error: ${e.toString()}');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error sharing to Facebook')),
+    Get.snackbar(
+      'Error',
+      'Failed to share to Facebook',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red.withOpacity(0.7),
+      colorText: Colors.white,
+      duration: Duration(seconds: 2),
     );
   }
 }
@@ -427,14 +710,35 @@ void _shareToTwitter(BuildContext context, String url) async {
 
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+      Get.snackbar(
+        'Success',
+        'Opening Twitter to share post',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green.withOpacity(0.7),
+        colorText: Colors.white,
+        duration: Duration(seconds: 2),
+      );
     } else {
       // Fallback
       await Share.share('$text: $url');
+      Get.snackbar(
+        'Success',
+        'Shared using system share',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green.withOpacity(0.7),
+        colorText: Colors.white,
+        duration: Duration(seconds: 2),
+      );
     }
   } catch (e) {
     log('Twitter share error: ${e.toString()}');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error sharing to Twitter')),
+    Get.snackbar(
+      'Error',
+      'Failed to share to Twitter',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red.withOpacity(0.7),
+      colorText: Colors.white,
+      duration: Duration(seconds: 2),
     );
   }
 }
@@ -449,25 +753,37 @@ void _shareToInstagram(BuildContext context, String url) async {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
       // Show guidance for the user
-      Future.delayed(Duration(milliseconds: 500), () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                'Please paste the link in Instagram. URL copied to clipboard.'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      });
+      Get.snackbar(
+        'Instagram Opened',
+        'URL copied to clipboard for sharing',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green.withOpacity(0.7),
+        colorText: Colors.white,
+        duration: Duration(seconds: 3),
+      );
       // Copy URL to clipboard for easier sharing
       await Clipboard.setData(ClipboardData(text: url));
     } else {
       // Fallback
       await Share.share('Check out this post: $url');
+      Get.snackbar(
+        'Success',
+        'Shared using system share',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green.withOpacity(0.7),
+        colorText: Colors.white,
+        duration: Duration(seconds: 2),
+      );
     }
   } catch (e) {
     log('Instagram share error: ${e.toString()}');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error sharing to Instagram')),
+    Get.snackbar(
+      'Error',
+      'Failed to share to Instagram',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red.withOpacity(0.7),
+      colorText: Colors.white,
+      duration: Duration(seconds: 2),
     );
   }
 }
@@ -481,14 +797,35 @@ void _shareToLinkedIn(BuildContext context, String url) async {
 
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+      Get.snackbar(
+        'Success',
+        'Opening LinkedIn to share post',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green.withOpacity(0.7),
+        colorText: Colors.white,
+        duration: Duration(seconds: 2),
+      );
     } else {
       // Fallback
       await Share.share('Check out this interesting post: $url');
+      Get.snackbar(
+        'Success',
+        'Shared using system share',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green.withOpacity(0.7),
+        colorText: Colors.white,
+        duration: Duration(seconds: 2),
+      );
     }
   } catch (e) {
     log('LinkedIn share error: ${e.toString()}');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error sharing to LinkedIn')),
+    Get.snackbar(
+      'Error',
+      'Failed to share to LinkedIn',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red.withOpacity(0.7),
+      colorText: Colors.white,
+      duration: Duration(seconds: 2),
     );
   }
 }

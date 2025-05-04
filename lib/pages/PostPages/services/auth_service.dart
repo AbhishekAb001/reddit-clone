@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:get/get.dart';
-import 'package:reddit/services/shared_preferences_service.dart';
-import 'package:reddit/services/firestore_service.dart';
+import 'package:reddit/pages/PostPages/services/shared_preferences_service.dart';
+import 'package:reddit/pages/PostPages/services/firestore_service.dart';
 import 'package:reddit/pages/OnetTimePages/create_username_screen.dart';
 import 'package:reddit/widgets/loading_screen.dart';
 

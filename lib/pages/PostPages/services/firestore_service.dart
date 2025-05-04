@@ -46,6 +46,9 @@ class FirestoreService {
       data.forEach((key, value) {
         if (value is List) {
           updateData[key] = FieldValue.arrayUnion(value);
+        } else if (value == null) {
+          // Use FieldValue.delete() for null values to remove the field
+          updateData[key] = FieldValue.delete();
         } else {
           updateData[key] = value;
         }
@@ -87,6 +90,24 @@ class FirestoreService {
     } catch (e) {
       log('Error saving user interests: $e');
       rethrow;
+    }
+  }
+
+  // Get user posts
+  Future<Map<String, dynamic>?> getUserPosts(String userId) async {
+    try {
+      final userRef = _firestore.collection('users').doc(userId);
+      final userDoc = await userRef.collection('posts').get();
+
+      if (userDoc.docs.isEmpty) {
+        return null;
+      }
+
+      final posts = userDoc.docs.map((doc) => doc.data()).toList();
+      return {'posts': posts};
+    } catch (e) {
+      log('Error getting user posts: $e');
+      return null;
     }
   }
 }

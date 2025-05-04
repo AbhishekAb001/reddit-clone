@@ -3,16 +3,24 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:reddit/pages/CommunityPages/style_screen.dart';
-import 'package:reddit/pages/HomePages/Navigation_screen.dart';
-import 'package:reddit/pages/CommunityPages/create_post_screen.dart';
-import 'package:reddit/controller/community_controller.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:reddit/model/Community.dart';
-import 'package:html/parser.dart' as html_parser;
-import 'package:reddit/services/reddit_post_service.dart';
+import 'package:reddit/pages/PostPages/services/community_service.dart';
+import 'package:reddit/pages/CommunityPages/style_screen.dart';
+import 'package:reddit/controller/profile_controller.dart';
+import 'package:reddit/controller/community_controller.dart';
+import 'package:reddit/pages/HomePages/Navigation_screen.dart';
+import 'package:reddit/model/reddit_post.dart';
+import 'package:reddit/pages/PostPages/services/reddit_post_service.dart';
+import 'package:reddit/widgets/post_card.dart';
+import 'package:reddit/widgets/shimmer_post_card.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
+import 'package:html/parser.dart' as html_parser;
 import 'package:shimmer/shimmer.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:reddit/pages/PostPages/post_comment_screen.dart';
+import 'package:reddit/pages/HomePages/create_post_screen.dart';
 
 class DetailsScreen extends StatefulWidget {
   final String communityName;
@@ -29,6 +37,7 @@ class DetailsScreen extends StatefulWidget {
 class _DetailsScreenState extends State<DetailsScreen> {
   final CommunityController _communityController =
       Get.find<CommunityController>();
+  final ProfileController _profileController = Get.find<ProfileController>();
   final RedditPostService _redditPostService = RedditPostService();
   Community? _communityInfo;
   bool _isLoading = true;
@@ -65,9 +74,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
           _communityInfo = info;
           _isLoading = false;
         });
-        log('Community Info: ${info.toJson()}'); // Debug print
       } else {
-        log('Community not found: ${widget.communityName}'); // Debug print
         setState(() => _isLoading = false);
       }
     } catch (e) {
@@ -84,7 +91,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
           ? widget.communityName.substring(2)
           : widget.communityName;
       final posts = await _redditPostService.fetchHotPosts(subreddit);
-      log('PostsCommunity: $posts');
       setState(() {
         _posts = posts;
         _isLoadingPosts = false;
@@ -379,18 +385,86 @@ class _DetailsScreenState extends State<DetailsScreen> {
               onPressed: () => Get.offAll(() => const NavigationScreen()),
             ),
             actions: [
-              IconButton(
-                icon: Icon(Icons.search, size: screenWidth * 0.07),
-                onPressed: () {},
-              ),
-              IconButton(
-                icon: Icon(Icons.share, size: screenWidth * 0.07),
-                onPressed: () {},
-              ),
-              IconButton(
-                icon: Icon(Icons.more_vert, size: screenWidth * 0.07),
-                onPressed: () {},
-              ),
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert,
+                    size: screenWidth * 0.07, color: Colors.white),
+                color: Colors.grey[900],
+                onSelected: (value) {
+                  switch (value) {
+                    case 'create_post':
+                      // Navigate to CreatePostScreen with preselected community
+                      Get.to(
+                        () => CreatePostScreen(
+                            preSelectedCommunity:
+                                widget.communityName.startsWith('r/')
+                                    ? widget.communityName.substring(2)
+                                    : widget.communityName),
+                        transition: Transition.rightToLeft,
+                        duration: const Duration(milliseconds: 300),
+                      );
+                      break;
+                    case 'style':
+                      Get.to(() => StyleScreen(
+                            communityName: widget.communityName,
+                            description:
+                                _communityInfo?.publicDescription ?? '',
+                          ));
+                      break;
+                    case 'report':
+                      _showReportDialog();
+                      break;
+                    case 'block':
+                      _showBlockConfirmation();
+                      break;
+                  }
+                },
+                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  PopupMenuItem<String>(
+                    value: 'create_post',
+                    child: Row(
+                      children: [
+                        Icon(Icons.post_add, color: Colors.white),
+                        SizedBox(width: 10),
+                        Text('Create Post',
+                            style: TextStyle(color: Colors.white)),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'style',
+                    child: Row(
+                      children: [
+                        Icon(Icons.style, color: Colors.white),
+                        SizedBox(width: 10),
+                        Text('Community Style',
+                            style: TextStyle(color: Colors.white)),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'report',
+                    child: Row(
+                      children: [
+                        Icon(Icons.flag, color: Colors.white),
+                        SizedBox(width: 10),
+                        Text('Report Community',
+                            style: TextStyle(color: Colors.white)),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'block',
+                    child: Row(
+                      children: [
+                        Icon(Icons.block, color: Colors.white),
+                        SizedBox(width: 10),
+                        Text('Block Community',
+                            style: TextStyle(color: Colors.white)),
+                      ],
+                    ),
+                  ),
+                ],
+              )
             ],
           ),
           SliverToBoxAdapter(
@@ -478,24 +552,55 @@ class _DetailsScreenState extends State<DetailsScreen> {
                           ),
                         ),
                         OutlinedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            // Get community name without 'r/' prefix if present
+                            final communityName =
+                                widget.communityName.startsWith('r/')
+                                    ? widget.communityName.substring(2)
+                                    : widget.communityName;
+
+                            // Toggle join status
+                            _profileController
+                                .toggleCommunityJoinStatus(communityName);
+                          },
                           style: OutlinedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            side: const BorderSide(color: Colors.white),
+                            backgroundColor:
+                                _profileController.isCommunityJoined(
+                              widget.communityName.startsWith('r/')
+                                  ? widget.communityName.substring(2)
+                                  : widget.communityName,
+                            )
+                                    ? Colors.transparent
+                                    : Colors.blue,
+                            side: BorderSide(
+                              color: _profileController.isCommunityJoined(
+                                widget.communityName.startsWith('r/')
+                                    ? widget.communityName.substring(2)
+                                    : widget.communityName,
+                              )
+                                  ? Colors.white
+                                  : Colors.blue,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
                             ),
                             minimumSize:
                                 Size(screenWidth * 0.18, screenWidth * 0.08),
                           ),
-                          child: Text(
-                            'Joined',
-                            style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontSize: screenWidth * 0.032,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          child: Obx(() => Text(
+                                _profileController.isCommunityJoined(
+                                  widget.communityName.startsWith('r/')
+                                      ? widget.communityName.substring(2)
+                                      : widget.communityName,
+                                )
+                                    ? 'Joined'
+                                    : 'Join',
+                                style: GoogleFonts.inter(
+                                  color: Colors.white,
+                                  fontSize: screenWidth * 0.032,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              )),
                         ),
                       ],
                     ),
@@ -861,25 +966,108 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
                 child: Row(
                   children: [
-                    Icon(Icons.arrow_upward,
-                        size: screenWidth * 0.04, color: Colors.grey[400]),
-                    SizedBox(width: screenWidth * 0.01),
-                    Text(
-                      _formatCount(post['ups'] ?? 0),
-                      style: GoogleFonts.inter(
-                        color: Colors.grey[400],
-                        fontSize: screenWidth * 0.03,
+                    // Upvote button
+                    Obx(() => InkWell(
+                          onTap: () {
+                            if (post['id'] != null) {
+                              _profileController.upvotePost(post['id']);
+                              setState(() {}); // Refresh UI
+                            }
+                          },
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.arrow_upward,
+                                size: screenWidth * 0.04,
+                                color:
+                                    (_profileController.postVotes[post['id']] ??
+                                                0) >
+                                            0
+                                        ? Colors.orange
+                                        : Colors.grey[400],
+                              ),
+                              SizedBox(width: screenWidth * 0.01),
+                              Text(
+                                _formatCount(post['ups'] ?? 0),
+                                style: GoogleFonts.inter(
+                                  color: (_profileController
+                                                  .postVotes[post['id']] ??
+                                              0) >
+                                          0
+                                      ? Colors.orange
+                                      : Colors.grey[400],
+                                  fontSize: screenWidth * 0.03,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )),
+                    SizedBox(width: screenWidth * 0.02),
+                    // Downvote button
+                    Obx(() => InkWell(
+                          onTap: () {
+                            if (post['id'] != null) {
+                              _profileController.downvotePost(post['id']);
+                              setState(() {}); // Refresh UI
+                            }
+                          },
+                          child: Icon(
+                            Icons.arrow_downward,
+                            size: screenWidth * 0.04,
+                            color: (_profileController.postVotes[post['id']] ??
+                                        0) <
+                                    0
+                                ? Colors.blue
+                                : Colors.grey[400],
+                          ),
+                        )),
+                    SizedBox(width: screenWidth * 0.04),
+                    // Comment button
+                    InkWell(
+                      onTap: () {
+                        Get.to(() => PostCommentScreen(
+                              postId: post['id'],
+                              postTitle: post['title'],
+                              subreddit: widget.communityName,
+                            ));
+                      },
+                      child: Row(
+                        children: [
+                          Icon(Icons.comment_outlined,
+                              size: screenWidth * 0.04,
+                              color: Colors.grey[400]),
+                          SizedBox(width: screenWidth * 0.01),
+                          Text(
+                            '${post['num_comments'] ?? 0} comments',
+                            style: GoogleFonts.inter(
+                              color: Colors.grey[400],
+                              fontSize: screenWidth * 0.03,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     SizedBox(width: screenWidth * 0.04),
-                    Icon(Icons.comment_outlined,
-                        size: screenWidth * 0.04, color: Colors.grey[400]),
-                    SizedBox(width: screenWidth * 0.01),
-                    Text(
-                      '${post['num_comments'] ?? 0} comments',
-                      style: GoogleFonts.inter(
-                        color: Colors.grey[400],
-                        fontSize: screenWidth * 0.03,
+                    // Share button
+                    InkWell(
+                      onTap: () {
+                        // Share post
+                        _sharePost(post);
+                      },
+                      child: Row(
+                        children: [
+                          Icon(Icons.share,
+                              size: screenWidth * 0.04,
+                              color: Colors.grey[400]),
+                          SizedBox(width: screenWidth * 0.01),
+                          Text(
+                            'Share',
+                            style: GoogleFonts.inter(
+                              color: Colors.grey[400],
+                              fontSize: screenWidth * 0.03,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -965,5 +1153,101 @@ class _DetailsScreenState extends State<DetailsScreen> {
       return '${lines.take(3).join('\n')}...';
     }
     return parsedString;
+  }
+
+  // Share post function
+  void _sharePost(Map<String, dynamic> post) {
+    final title = post['title'] ?? '';
+    final url = post['permalink'] != null
+        ? 'https://www.reddit.com${post['permalink']}'
+        : post['url'] ?? '';
+
+    final textToShare = 'Check out this Reddit post: $title\n$url';
+
+    Share.share(textToShare);
+  }
+
+  // Show report dialog
+  void _showReportDialog() {
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Text(
+          'Report Community',
+          style: GoogleFonts.inter(color: Colors.white),
+        ),
+        content: Text(
+          'Why are you reporting this community?',
+          style: GoogleFonts.inter(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(color: Colors.blue),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Get.back();
+              Get.snackbar(
+                'Report Submitted',
+                'Thank you for your report',
+                snackPosition: SnackPosition.BOTTOM,
+                backgroundColor: Colors.grey[800],
+                colorText: Colors.white,
+              );
+            },
+            child: Text(
+              'Submit',
+              style: GoogleFonts.inter(color: Colors.blue),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Show block confirmation
+  void _showBlockConfirmation() {
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Text(
+          'Block Community',
+          style: GoogleFonts.inter(color: Colors.white),
+        ),
+        content: Text(
+          'Are you sure you want to block this community? You won\'t see posts from r/${widget.communityName} anymore.',
+          style: GoogleFonts.inter(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(color: Colors.blue),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Get.back();
+              Get.snackbar(
+                'Community Blocked',
+                'You have successfully blocked r/${widget.communityName}',
+                snackPosition: SnackPosition.BOTTOM,
+                backgroundColor: Colors.grey[800],
+                colorText: Colors.white,
+              );
+            },
+            child: Text(
+              'Block',
+              style: GoogleFonts.inter(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

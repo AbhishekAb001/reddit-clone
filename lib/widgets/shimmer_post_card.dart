@@ -41,68 +41,155 @@ class ShimmerPostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Container(
       margin: EdgeInsets.symmetric(
-        vertical: MediaQuery.of(context).size.height * 0.01,
-        horizontal: MediaQuery.of(context).size.width * 0.03,
+        vertical: screenHeight * 0.01,
+        horizontal: screenWidth * 0.03,
       ),
-      padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.03),
+      padding: EdgeInsets.all(screenWidth * 0.03),
       decoration: BoxDecoration(
         color: Colors.grey[900],
-        borderRadius:
-            BorderRadius.circular(MediaQuery.of(context).size.width * 0.02),
+        borderRadius: BorderRadius.circular(screenWidth * 0.02),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const ShimmerWidget.circular(
-                width: 32.0,
-                height: 32.0,
+              ShimmerWidget.circular(
+                width: screenWidth * 0.1,
+                height: screenWidth * 0.1,
               ),
-              SizedBox(width: MediaQuery.of(context).size.width * 0.02),
+              SizedBox(width: screenWidth * 0.02),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const ShimmerWidget.rectangular(
-                    width: 120.0,
-                    height: 12.0,
+                  ShimmerWidget.rectangular(
+                    width: screenWidth * 0.3,
+                    height: screenHeight * 0.015,
                   ),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.005),
-                  const ShimmerWidget.rectangular(
-                    width: 80.0,
-                    height: 8.0,
+                  SizedBox(height: screenHeight * 0.005),
+                  ShimmerWidget.rectangular(
+                    width: screenWidth * 0.2,
+                    height: screenHeight * 0.01,
                   ),
                 ],
               ),
             ],
           ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-          const ShimmerWidget.rectangular(
+          SizedBox(height: screenHeight * 0.02),
+          ShimmerWidget.rectangular(
             width: double.infinity,
-            height: 16.0,
+            height: screenHeight * 0.02,
           ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-          const ShimmerWidget.rectangular(
-            width: 280.0,
-            height: 16.0,
+          SizedBox(height: screenHeight * 0.01),
+          ShimmerWidget.rectangular(
+            width: screenWidth * 0.7,
+            height: screenHeight * 0.02,
           ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-          const ShimmerWidget.rectangular(
+          SizedBox(height: screenHeight * 0.02),
+          ShimmerWidget.rectangular(
             width: double.infinity,
-            height: 160.0,
+            height: screenHeight * 0.2,
           ),
-          SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+          SizedBox(height: screenHeight * 0.02),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(
               4,
-              (index) => const ShimmerWidget.rectangular(
-                width: 60.0,
-                height: 24.0,
+              (index) => ShimmerWidget.rectangular(
+                width: screenWidth * 0.18,
+                height: screenHeight * 0.035,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ShimmerCommentCard extends StatelessWidget {
+  const ShimmerCommentCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return Container(
+      margin: EdgeInsets.symmetric(
+        vertical: screenWidth * 0.02,
+        horizontal: screenWidth * 0.04,
+      ),
+      padding: EdgeInsets.all(screenWidth * 0.04),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(screenWidth * 0.02),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Subreddit
+          ShimmerWidget.rectangular(
+            width: screenWidth * 0.25,
+            height: screenHeight * 0.015,
+          ),
+          SizedBox(height: screenWidth * 0.02),
+
+          // Post title
+          ShimmerWidget.rectangular(
+            width: double.infinity,
+            height: screenHeight * 0.02,
+          ),
+          SizedBox(height: screenWidth * 0.01),
+          ShimmerWidget.rectangular(
+            width: screenWidth * 0.7,
+            height: screenHeight * 0.02,
+          ),
+
+          // Divider
+          SizedBox(height: screenWidth * 0.02),
+          Container(
+            width: double.infinity,
+            height: 1,
+            color: Colors.grey[800],
+          ),
+          SizedBox(height: screenWidth * 0.02),
+
+          // Comment text lines
+          ShimmerWidget.rectangular(
+            width: double.infinity,
+            height: screenHeight * 0.015,
+          ),
+          SizedBox(height: screenWidth * 0.01),
+          ShimmerWidget.rectangular(
+            width: double.infinity,
+            height: screenHeight * 0.015,
+          ),
+          SizedBox(height: screenWidth * 0.01),
+          ShimmerWidget.rectangular(
+            width: screenWidth * 0.5,
+            height: screenHeight * 0.015,
+          ),
+
+          // Footer
+          SizedBox(height: screenWidth * 0.03),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              ShimmerWidget.rectangular(
+                width: screenWidth * 0.2,
+                height: screenHeight * 0.012,
+              ),
+              ShimmerWidget.rectangular(
+                width: screenWidth * 0.15,
+                height: screenHeight * 0.025,
+              ),
+            ],
           ),
         ],
       ),

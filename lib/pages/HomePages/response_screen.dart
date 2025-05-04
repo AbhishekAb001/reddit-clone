@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:get/get.dart';
 import 'dart:developer';
 import 'package:reddit/model/message.dart';
-import 'package:reddit/services/gemini_service.dart';
+import 'package:reddit/pages/PostPages/services/gemini_service.dart';
 
 class ResponseScreen extends StatefulWidget {
   final String question;

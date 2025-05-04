@@ -4,8 +4,8 @@ import 'package:get/get.dart';
 import 'package:reddit/pages/AuthPages/login_screen.dart';
 import 'package:reddit/pages/HomePages/Navigation_screen.dart';
 import 'package:reddit/widgets/loading_screen.dart';
-import 'package:reddit/services/shared_preferences_service.dart';
-import 'package:reddit/services/firestore_service.dart';
+import 'package:reddit/pages/PostPages/services/shared_preferences_service.dart';
+import 'package:reddit/pages/PostPages/services/firestore_service.dart';
 import 'package:reddit/pages/OnetTimePages/create_username_screen.dart';
 
 class SplashScreen extends StatefulWidget {

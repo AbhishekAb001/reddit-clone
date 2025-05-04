@@ -1,9 +1,10 @@
 import 'package:get/get.dart';
 import 'package:reddit/model/Community.dart';
-import 'package:reddit/services/community_service.dart';
+import 'package:reddit/pages/PostPages/services/community_service.dart';
 import 'package:reddit/controller/profile_controller.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloudinary_public/cloudinary_public.dart';
+import 'package:reddit/utils/config.dart';
 import 'dart:io';
 import 'dart:developer';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,7 +12,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 class CommunityController extends GetxController {
   final CommunityService _communityService = CommunityService();
   final ProfileController _profileController = Get.find<ProfileController>();
-  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final cloudinary = CloudinaryPublic(
+      CloudinaryConfig.cloudName, CloudinaryConfig.uploadPreset,
+      cache: false);
 
   // Observable variables
   RxList<Community> get communities => _communityService.communities;
@@ -37,12 +40,12 @@ class CommunityController extends GetxController {
   Future<void> _loadRecentlyVisited() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final savedList = prefs.getStringList('recently_visited_communities');
-      if (savedList != null) {
-        _recentlyVisitedCommunities.value = savedList;
+      final List<String>? recentList = prefs.getStringList('recentCommunities');
+      if (recentList != null) {
+        _recentlyVisitedCommunities.value = recentList;
       }
     } catch (e) {
-      print('Error loading recently visited communities: $e');
+      log('Error loading recently visited communities: $e');
     }
   }
 
@@ -51,17 +54,14 @@ class CommunityController extends GetxController {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(
-          'recently_visited_communities', _recentlyVisitedCommunities);
+          'recentCommunities', _recentlyVisitedCommunities.toList());
     } catch (e) {
-      print('Error saving recently visited communities: $e');
+      log('Error saving recently visited communities: $e');
     }
   }
 
   // Visit a community
   void visitCommunity(String communityName) {
-    log('Visiting community: $communityName');
-    log('Current recently visited: ${_recentlyVisitedCommunities}');
-
     // Create a new list to trigger the observable update
     final updatedList = List<String>.from(_recentlyVisitedCommunities);
 
@@ -76,15 +76,11 @@ class CommunityController extends GetxController {
       updatedList.removeLast();
     }
 
-    log('Updated list: $updatedList');
-
     // Update the observable list
     _recentlyVisitedCommunities.value = updatedList;
 
     // Save to storage
     _saveRecentlyVisited();
-
-    log('Recently visited after update: ${_recentlyVisitedCommunities}');
   }
 
   // Add a community to recently visited (legacy method, use visitCommunity instead)
@@ -92,73 +88,37 @@ class CommunityController extends GetxController {
     visitCommunity(communityName);
   }
 
-  // Upload image to Firebase Storage
+  // Upload image to Cloudinary
   Future<String?> _uploadImage(dynamic imageFile, String path) async {
     try {
       if (imageFile is File) {
-        log('Starting file upload for: ${imageFile.path}');
-
         // Check if file exists
         if (!await imageFile.exists()) {
-          log('File does not exist: ${imageFile.path}');
           return null;
         }
 
-        // Get file size
-        final fileSize = await imageFile.length();
-        log('File size: ${fileSize} bytes');
-
-        // Create storage reference
-        final storageRef = _storage.ref().child(path);
-        log('Storage reference created: $path');
-
-        // Upload file with metadata
-        log('Starting upload task...');
-        final metadata = SettableMetadata(
-          contentType: 'image/jpeg',
-          customMetadata: {'picked-file-path': imageFile.path},
-        );
-
         try {
-          final uploadTask = storageRef.putFile(imageFile, metadata);
+          // Upload file to Cloudinary
+          final response = await cloudinary.uploadFile(
+            CloudinaryFile.fromFile(
+              imageFile.path,
+              folder: path,
+              resourceType: CloudinaryResourceType.Image,
+            ),
+          );
 
-          // Monitor upload progress
-          uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-            final progress =
-                (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            log('Upload progress: ${progress.toStringAsFixed(2)}%');
-          });
-
-          // Wait for upload to complete
-          final snapshot = await uploadTask;
-          log('Upload task completed');
-
-          // Get download URL
-          log('Getting download URL...');
-          final downloadUrl = await snapshot.ref.getDownloadURL();
-          log('Download URL obtained: $downloadUrl');
-
-          return downloadUrl;
+          return response.secureUrl;
         } catch (uploadError) {
-          log('Error during upload: $uploadError');
-          // Try to delete the failed upload
-          try {
-            await storageRef.delete();
-          } catch (deleteError) {
-            log('Error deleting failed upload: $deleteError');
-          }
+          log('Error during upload to Cloudinary: $uploadError');
           rethrow;
         }
       } else if (imageFile is String && imageFile.startsWith('http')) {
-        log('Using existing URL: $imageFile');
         return imageFile;
       }
-      log('No valid image file provided');
       return null;
-    } catch (e, stackTrace) {
-      log('Error uploading image: $e');
-      log('Stack trace: $stackTrace');
-      rethrow;
+    } catch (e) {
+      log('Error in _uploadImage: $e');
+      return null;
     }
   }
 
@@ -172,8 +132,19 @@ class CommunityController extends GetxController {
     dynamic avatarImage,
   }) async {
     try {
+      log('======= Starting Community Creation in Controller =======');
+      log('Name: $name');
+      log('Description: $description');
+      log('Type: $type');
+      log('Mature: $isMature');
+      log('Topics: $topics');
+      log('Banner image: ${bannerImage != null ? 'provided' : 'null'}');
+      log('Avatar image: ${avatarImage != null ? 'provided' : 'null'}');
+      log('Current user ID: ${_profileController.userId.value}');
+
+      // Set loading flag
+      log('Setting isLoading to true');
       isLoading.value = true;
-      log('Starting community creation for: $name');
 
       // Generate ID
       final String id = DateTime.now().millisecondsSinceEpoch.toString();
@@ -184,11 +155,10 @@ class CommunityController extends GetxController {
       String? avatarUrl;
 
       if (bannerImage != null) {
-        log('Processing banner image...');
         try {
-          bannerUrl =
-              await _uploadImage(bannerImage, 'communities/$id/banner.jpg');
-          log('Banner upload result: ${bannerUrl ?? "Failed"}');
+          log('Uploading banner image...');
+          bannerUrl = await _uploadImage(bannerImage, 'communities/$id/banner');
+          log('Banner uploaded successfully: $bannerUrl');
         } catch (e) {
           log('Error uploading banner: $e');
           // Continue with community creation even if banner upload fails
@@ -196,11 +166,10 @@ class CommunityController extends GetxController {
       }
 
       if (avatarImage != null) {
-        log('Processing avatar image...');
         try {
-          avatarUrl =
-              await _uploadImage(avatarImage, 'communities/$id/avatar.jpg');
-          log('Avatar upload result: ${avatarUrl ?? "Failed"}');
+          log('Uploading avatar image...');
+          avatarUrl = await _uploadImage(avatarImage, 'communities/$id/avatar');
+          log('Avatar uploaded successfully: $avatarUrl');
         } catch (e) {
           log('Error uploading avatar: $e');
           // Continue with community creation even if avatar upload fails
@@ -208,7 +177,7 @@ class CommunityController extends GetxController {
       }
 
       // Create community object
-      log('Creating community object...');
+      log('Creating community object with ID: $id');
       final community = Community(
         id: id,
         name: name,
@@ -227,15 +196,20 @@ class CommunityController extends GetxController {
         bannerImg: bannerUrl,
         iconImg: avatarUrl,
       );
+      log('Community object created: ${community.toJson()}');
 
-      log('Saving community to Firebase...');
+      log('Calling community service to save community to Firebase...');
       await _communityService.createCommunity(community);
-      log('Community saved successfully');
+      log('Community successfully saved to Firebase');
 
       // Add to recently visited and refresh
+      log('Adding to recently visited communities...');
       addToRecentlyVisited(name);
+      log('Fetching created communities for refresh...');
       await fetchCreatedCommunities();
+      log('Communities refreshed successfully');
 
+      log('Showing success message');
       Get.snackbar(
         'Success',
         'Community created successfully',
@@ -243,9 +217,12 @@ class CommunityController extends GetxController {
         backgroundColor: Colors.green,
         colorText: Colors.white,
       );
+      log('======= Community Creation Completed Successfully =======');
     } catch (e, stackTrace) {
-      log('Error creating community: $e');
+      log('======= Error Creating Community =======');
+      log('Error details: $e');
       log('Stack trace: $stackTrace');
+
       Get.snackbar(
         'Error',
         'Failed to create community: ${e.toString()}',
@@ -255,6 +232,7 @@ class CommunityController extends GetxController {
       );
       rethrow;
     } finally {
+      log('Setting isLoading to false');
       isLoading.value = false;
     }
   }

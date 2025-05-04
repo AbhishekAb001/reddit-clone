@@ -5,29 +5,50 @@ import 'package:get/get.dart';
 import 'package:reddit/pages/OnetTimePages/splash_screen.dart';
 import 'package:reddit/pages/HomePages/Navigation_screen.dart';
 import 'package:reddit/widgets/loading_screen.dart';
-import 'package:reddit/services/shared_preferences_service.dart';
+import 'package:reddit/pages/PostPages/services/shared_preferences_service.dart';
 import 'package:reddit/controller/profile_controller.dart';
 import 'package:reddit/controller/feed_controller.dart';
 import 'package:reddit/controller/community_controller.dart';
+import 'package:reddit/controller/search_history_controller.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: const FirebaseOptions(
+        apiKey: 'AIzaSyDbrW97zekwMdtZBAQLC55lC7pcuV6jIJ0',
+        appId: '1:469269709724:android:f066f7a8e74b84c1b8fe59',
+        messagingSenderId: '469269709724',
+        projectId: 'redit-clone-8fd14',
+        storageBucket: 'redit-clone-8fd14.firebasestorage.app',
+      ),
+    );
 
     // Initialize shared preferences
     final prefs = SharedPreferencesService();
     await prefs.init();
+
     Gemini.init(apiKey: "AIzaSyBYJqwzAtH9soEotD9DryVPkZgTc0godXs");
 
     // Initialize Controllers
     Get.put(ProfileController());
     Get.put(FeedController());
     Get.put(CommunityController());
+    Get.put(SearchHistoryController());
   } catch (e) {
-    print('Error during initialization: $e');
-    // Continue with the app even if there are initialization errors
+    debugPrint('Error during initialization: $e');
+    // Show error dialog or handle the error appropriately
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Text('Error initializing app: $e'),
+          ),
+        ),
+      ),
+    );
+    return;
   }
 
   runApp(const MyApp());

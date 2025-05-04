@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:reddit/pages/OnetTimePages/about_you_screen.dart';
-import 'package:reddit/services/firestore_service.dart';
+import 'package:reddit/pages/PostPages/services/firestore_service.dart';
 import 'package:reddit/widgets/loading_screen.dart';
 
 class InterestsScreen extends StatefulWidget {

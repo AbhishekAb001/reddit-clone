@@ -4,12 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:reddit/pages/HomePages/Navigation_screen.dart';
-import 'package:reddit/pages/CommunityPages/create_post_screen.dart';
-import 'package:reddit/controller/community_controller.dart';
 import 'package:reddit/model/Community.dart';
-import 'package:reddit/services/community_service.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:reddit/pages/HomePages/create_post_screen.dart';
+import 'package:reddit/pages/PostPages/post_comment_screen.dart';
 
 class UserDetailScreen extends StatefulWidget {
   final String communityName;
@@ -24,7 +23,6 @@ class UserDetailScreen extends StatefulWidget {
 }
 
 class _UserDetailScreenState extends State<UserDetailScreen> {
-  final CommunityService _communityService = CommunityService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   Community? _communityInfo;
   bool _isLoading = true;
@@ -73,9 +71,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
           );
           _isLoading = false;
         });
-        log('Community Info from Firebase: ${_communityInfo?.toJson()}');
       } else {
-        log('Community not found in Firebase: ${widget.communityName}');
         setState(() => _isLoading = false);
       }
     } catch (e) {
@@ -92,13 +88,15 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
           ? widget.communityName.substring(2)
           : widget.communityName;
 
+      String? docId = await _findCommunityDocumentId(subreddit);
       // Fetch posts from Firebase
       final postsSnapshot = await _firestore
           .collection('communities')
-          .doc(subreddit)
+          .doc(docId)
           .collection('posts')
-          .orderBy('createdAt', descending: true)
           .get();
+
+      log('Fetched ${postsSnapshot.docs.length} posts for $subreddit');
 
       setState(() {
         _posts = postsSnapshot.docs.map((doc) => doc.data()).toList();
@@ -107,6 +105,31 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
     } catch (e) {
       log('Error fetching posts: $e');
       setState(() => _isLoadingPosts = false);
+    }
+  }
+
+  Future<String?> _findCommunityDocumentId(String communityName) async {
+    try {
+      // Clean community name
+      final String cleanName = communityName.startsWith('r/')
+          ? communityName.substring(2)
+          : communityName;
+      log('Finding community document ID for: $cleanName');
+      // Query Firestore to find the community document ID
+      final querySnapshot = await _firestore
+          .collection('communities')
+          .where('name', isEqualTo: "r/$cleanName")
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        return querySnapshot.docs.first.id;
+      } else {
+        log('Community not found: $communityName');
+        return null;
+      }
+    } catch (e) {
+      log('Error finding community document ID: $e');
+      return null;
     }
   }
 
@@ -358,20 +381,6 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
               icon: Icon(Icons.arrow_back, size: screenWidth * 0.07),
               onPressed: () => Get.offAll(() => const NavigationScreen()),
             ),
-            actions: [
-              IconButton(
-                icon: Icon(Icons.search, size: screenWidth * 0.07),
-                onPressed: () {},
-              ),
-              IconButton(
-                icon: Icon(Icons.share, size: screenWidth * 0.07),
-                onPressed: () {},
-              ),
-              IconButton(
-                icon: Icon(Icons.more_vert, size: screenWidth * 0.07),
-                onPressed: () {},
-              ),
-            ],
           ),
           SliverToBoxAdapter(
             child: Container(
@@ -529,7 +538,11 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Get.to(
-            () => CreatePostScreen(communityName: widget.communityName),
+            () => CreatePostScreen(
+              preSelectedCommunity: widget.communityName.startsWith('r/')
+                  ? widget.communityName.substring(2)
+                  : widget.communityName,
+            ),
             transition: Transition.rightToLeft,
             duration: const Duration(milliseconds: 300),
           );
@@ -703,119 +716,230 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
       itemCount: _posts.length,
       itemBuilder: (context, index) {
         final post = _posts[index];
-        return Container(
-          color: Colors.grey[900],
-          margin: EdgeInsets.only(bottom: screenWidth * 0.02),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: EdgeInsets.all(screenWidth * 0.04),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: screenWidth * 0.02,
-                      backgroundColor: Colors.grey[800],
-                      child: Icon(Icons.person,
-                          size: screenWidth * 0.03, color: Colors.grey[400]),
-                    ),
-                    SizedBox(width: screenWidth * 0.02),
-                    Text(
-                      'u/${post['author'] ?? 'deleted'}',
-                      style: GoogleFonts.inter(
-                        color: Colors.grey[400],
-                        fontSize: screenWidth * 0.03,
-                      ),
-                    ),
-                    SizedBox(width: screenWidth * 0.02),
-                    Text(
-                      '• ${_formatTimeAgo(post['createdAt']?.toString())}',
-                      style: GoogleFonts.inter(
-                        color: Colors.grey[500],
-                        fontSize: screenWidth * 0.028,
-                      ),
-                    ),
-                  ],
-                ),
+        return GestureDetector(
+          onTap: () {
+            Get.to(
+              () => PostCommentScreen(
+                postId: post['id'],
+                postTitle: post['title'],
+                subreddit: widget.communityName,
+                postThumbnail: post['mediaUrl'],
               ),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
-                child: Text(
-                  post['title'] ?? '',
-                  style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: screenWidth * 0.035,
-                    fontWeight: FontWeight.w500,
+              transition: Transition.rightToLeft,
+              duration: const Duration(milliseconds: 300),
+            );
+          },
+          child: Container(
+            color: Colors.grey[900],
+            margin: EdgeInsets.only(bottom: screenWidth * 0.02),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Post header
+                Padding(
+                  padding: EdgeInsets.all(screenWidth * 0.04),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: screenWidth * 0.02,
+                        backgroundColor: Colors.grey[800],
+                        child: Icon(Icons.person,
+                            size: screenWidth * 0.03, color: Colors.grey[400]),
+                      ),
+                      SizedBox(width: screenWidth * 0.02),
+                      Text(
+                        'u/${post['author'] ?? 'deleted'}',
+                        style: GoogleFonts.inter(
+                          color: Colors.grey[400],
+                          fontSize: screenWidth * 0.03,
+                        ),
+                      ),
+                      SizedBox(width: screenWidth * 0.02),
+                      Text(
+                        '• ${_formatTimeAgo(post['createdAt']?.toString())}',
+                        style: GoogleFonts.inter(
+                          color: Colors.grey[500],
+                          fontSize: screenWidth * 0.028,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              if (post['content'] != null && post['content'].isNotEmpty) ...[
-                SizedBox(height: screenWidth * 0.02),
+                // Post title
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
                   child: Text(
-                    post['content'],
+                    post['title'] ?? '',
                     style: GoogleFonts.inter(
-                      color: Colors.grey[300],
-                      fontSize: screenWidth * 0.032,
+                      color: Colors.white,
+                      fontSize: screenWidth * 0.035,
+                      fontWeight: FontWeight.w500,
                     ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ],
-              // Add media content
-              if (post['mediaUrl'] != null && post['mediaUrl'].isNotEmpty) ...[
+                // Post content
+                if (post['content'] != null && post['content'].isNotEmpty) ...[
+                  SizedBox(height: screenWidth * 0.02),
+                  Padding(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+                    child: Text(
+                      post['content'],
+                      style: GoogleFonts.inter(
+                        color: Colors.grey[300],
+                        fontSize: screenWidth * 0.032,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+                // Media content
+                if (post['mediaUrl'] != null &&
+                    post['mediaUrl'].isNotEmpty) ...[
+                  SizedBox(height: screenWidth * 0.02),
+                  Container(
+                    width: double.infinity,
+                    height: screenWidth * 0.6,
+                    margin:
+                        EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                      color: Colors.grey[800],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                      child: Image.network(
+                        post['mediaUrl'],
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Center(
+                            child: Icon(Icons.image_not_supported,
+                                color: Colors.grey[400],
+                                size: screenWidth * 0.1),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
                 SizedBox(height: screenWidth * 0.02),
-                Container(
-                  width: double.infinity,
-                  height: screenWidth * 0.6,
-                  margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
-                  child: Image.network(
-                    post['mediaUrl'],
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[800],
-                        child: Icon(Icons.image_not_supported,
-                            color: Colors.grey[400], size: screenWidth * 0.1),
-                      );
-                    },
+                // Post actions
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+                  child: Row(
+                    children: [
+                      // Vote buttons
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius:
+                              BorderRadius.circular(screenWidth * 0.05),
+                          border: Border.all(color: Colors.grey[700]!),
+                        ),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.arrow_upward,
+                                  size: screenWidth * 0.04,
+                                  color: post['userVote'] == 1
+                                      ? Colors.orange
+                                      : Colors.grey[400]),
+                              onPressed: () {
+                                // Handle upvote
+                              },
+                            ),
+                            Text(
+                              _formatCount(post['upvotes'] ?? 0),
+                              style: GoogleFonts.inter(
+                                color: post['userVote'] == 1
+                                    ? Colors.orange
+                                    : post['userVote'] == -1
+                                        ? Colors.blue
+                                        : Colors.grey[400],
+                                fontSize: screenWidth * 0.035,
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.arrow_downward,
+                                  size: screenWidth * 0.04,
+                                  color: post['userVote'] == -1
+                                      ? Colors.blue
+                                      : Colors.grey[400]),
+                              onPressed: () {
+                                // Handle downvote
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: screenWidth * 0.02),
+                      // Comments button
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius:
+                              BorderRadius.circular(screenWidth * 0.05),
+                          border: Border.all(color: Colors.grey[700]!),
+                        ),
+                        child: InkWell(
+                          onTap: () {
+                            Get.to(
+                              () => PostCommentScreen(
+                                postId: post['id'],
+                                postTitle: post['title'],
+                                subreddit: widget.communityName,
+                                postThumbnail: post['mediaUrl'],
+                              ),
+                            );
+                          },
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: screenWidth * 0.03,
+                                vertical: screenWidth * 0.02),
+                            child: Row(
+                              children: [
+                                Icon(Icons.comment_outlined,
+                                    size: screenWidth * 0.04,
+                                    color: Colors.grey[400]),
+                                SizedBox(width: screenWidth * 0.01),
+                                Text(
+                                  '${post['commentCount'] ?? 0}',
+                                  style: GoogleFonts.inter(
+                                    color: Colors.grey[400],
+                                    fontSize: screenWidth * 0.035,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: screenWidth * 0.02),
+                      // Share button
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius:
+                              BorderRadius.circular(screenWidth * 0.05),
+                          border: Border.all(color: Colors.grey[700]!),
+                        ),
+                        child: IconButton(
+                          icon: Icon(Icons.share_outlined,
+                              size: screenWidth * 0.04,
+                              color: Colors.grey[400]),
+                          onPressed: () {
+                            // Handle share
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                SizedBox(height: screenWidth * 0.02),
+                Divider(color: Colors.grey[800], thickness: 1),
               ],
-              SizedBox(height: screenWidth * 0.02),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
-                child: Row(
-                  children: [
-                    Icon(Icons.arrow_upward,
-                        size: screenWidth * 0.04, color: Colors.grey[400]),
-                    SizedBox(width: screenWidth * 0.01),
-                    Text(
-                      _formatCount(post['upvotes'] ?? 0),
-                      style: GoogleFonts.inter(
-                        color: Colors.grey[400],
-                        fontSize: screenWidth * 0.03,
-                      ),
-                    ),
-                    SizedBox(width: screenWidth * 0.04),
-                    Icon(Icons.comment_outlined,
-                        size: screenWidth * 0.04, color: Colors.grey[400]),
-                    SizedBox(width: screenWidth * 0.01),
-                    Text(
-                      '${post['commentCount'] ?? 0} comments',
-                      style: GoogleFonts.inter(
-                        color: Colors.grey[400],
-                        fontSize: screenWidth * 0.03,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: screenWidth * 0.02),
-              Divider(color: Colors.grey[800], thickness: 1),
-            ],
+            ),
           ),
         );
       },

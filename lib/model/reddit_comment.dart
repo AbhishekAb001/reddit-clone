@@ -13,6 +13,9 @@ class RedditComment {
   final int depth;
   final String? authorFlairText;
   final String distinguished;
+  final bool hasImage;
+  final String? imagePath;
+  final bool isVideo;
 
   RedditComment({
     required this.id,
@@ -27,6 +30,9 @@ class RedditComment {
     required this.depth,
     this.authorFlairText,
     required this.distinguished,
+    this.hasImage = false,
+    this.imagePath,
+    this.isVideo = false,
   });
 
   factory RedditComment.fromJson(Map<String, dynamic> json) {
@@ -63,6 +69,9 @@ class RedditComment {
       depth: data['depth'] ?? 0,
       authorFlairText: data['author_flair_text'],
       distinguished: data['distinguished'] ?? '',
+      hasImage: data['has_image'] ?? false,
+      imagePath: data['image_path'],
+      isVideo: data['is_video'] ?? false,
     );
   }
 

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 import 'package:get/get.dart';
-import 'package:reddit/services/reddit_post_service.dart';
+import 'package:reddit/pages/PostPages/services/reddit_post_service.dart';
 import 'package:reddit/controller/profile_controller.dart';
 import 'package:reddit/model/reddit_post.dart';
 
@@ -40,18 +40,9 @@ class FeedController extends GetxController {
       isLoading.value = true;
       final interests = _profileController.interests;
 
-      log('Fetching posts for interests: $interests');
-
       // If no interests, fetch default content
       if (interests.isEmpty) {
-        log('No interests found, fetching from r/all');
         final defaultPosts = await _redditService.fetchHotPosts('all');
-        log('Fetched posts data: ${defaultPosts.map((post) => {
-              'subreddit': post['subreddit'],
-              'title': post['title'],
-              'ups': post['ups'],
-              'comments': post['num_comments'],
-            }).toList()}');
 
         final redditPosts =
             defaultPosts.map((post) => RedditPost.fromJson(post)).toList();
@@ -64,10 +55,7 @@ class FeedController extends GetxController {
 
       for (final topic in interests) {
         try {
-          log('Fetching posts for topic: $topic');
           final posts = await _redditService.fetchHotPosts(topic);
-          log('Fetched ${posts.length} posts for $topic');
-          log('Sample post data for $topic: ${posts.first}');
 
           final redditPosts =
               posts.map((post) => RedditPost.fromJson(post)).toList();
@@ -86,9 +74,6 @@ class FeedController extends GetxController {
       fetchedPosts.shuffle();
       allPosts.value = fetchedPosts;
       _postsController.add(fetchedPosts); // Emit posts through the stream
-
-      log('Total posts fetched: ${allPosts.length}');
-      log('Subreddits in feed: ${allPosts.map((post) => post.subreddit).toSet().toList()}');
     } catch (e) {
       log('Error in fetchPostsFromInterests: $e');
       // Handle error but don't clear existing posts

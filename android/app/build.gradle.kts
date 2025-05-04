@@ -1,9 +1,8 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
-    id("dev.flutter.flutter-gradle-plugin")
-    id("com.google.gms.google-services")
+    id("dev.flutter.flutter-gradle-plugin") // Flutter plugin must be after Android + Kotlin
+    id("com.google.gms.google-services")    // Needed for Firebase
 }
 
 android {
@@ -21,20 +20,16 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.reddit"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled = true // 👈 sometimes needed for Firebase plugins
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -43,12 +38,16 @@ android {
 flutter {
     source = "../.."
 }
+
 dependencies {
-    // Import the Firebase BoM
+    // Firebase BOM to manage versions
     implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
 
-    // Add the dependencies for Firebase products you want to use
+    // Firebase libraries
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-storage")
+
+    // Google Sign-In support (optional)
     implementation("com.google.android.gms:play-services-auth:20.7.0")
 }
