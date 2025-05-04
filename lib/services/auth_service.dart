@@ -1,10 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:get/get.dart';
-import 'package:reddit/pages/PostPages/services/shared_preferences_service.dart';
-import 'package:reddit/pages/PostPages/services/firestore_service.dart';
+import 'package:reddit/services/shared_preferences_service.dart';
+import 'package:reddit/services/firestore_service.dart';
 import 'package:reddit/pages/OnetTimePages/create_username_screen.dart';
 import 'package:reddit/widgets/loading_screen.dart';
+import 'dart:developer';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -29,6 +30,7 @@ class AuthService {
       await _saveUserData(userCredential.user);
       return userCredential;
     } on FirebaseAuthException catch (e) {
+      log('Error during email/password sign in: ${e.message}');
       String message = 'An error occurred';
       if (e.code == 'user-not-found') {
         message = 'No user found with this email';
@@ -59,6 +61,7 @@ class AuthService {
       await _saveUserData(userCredential.user);
       return userCredential;
     } catch (e) {
+      log('Error during Google sign in: ${e.toString()}');
       Get.snackbar(
         'Error',
         'Failed to sign in with Google: ${e.toString()}',
@@ -79,7 +82,10 @@ class AuthService {
     await _auth.verifyPhoneNumber(
       phoneNumber: phoneNumber,
       verificationCompleted: onVerificationCompleted,
-      verificationFailed: onVerificationFailed,
+      verificationFailed: (FirebaseAuthException e) {
+        log('Error during phone verification: ${e.message}');
+        onVerificationFailed(e);
+      },  
       codeSent: (String verificationId, int? resendToken) {
         onCodeSent(verificationId);
       },
@@ -101,6 +107,7 @@ class AuthService {
       await _saveUserData(userCredential.user);
       return userCredential;
     } on FirebaseAuthException catch (e) {
+      log('Error during phone number sign in: ${e.message}');
       Get.snackbar(
         'Error',
         e.message ?? 'Failed to verify phone number',
@@ -108,23 +115,6 @@ class AuthService {
       );
       return null;
     }
-  }
-
-  // Sign Out
-  Future<void> signOut() async {
-    await _googleSignIn.signOut();
-    await _auth.signOut();
-    await _prefs.clearUserData();
-  }
-
-  // Check if user is signed in
-  bool isSignedIn() {
-    return _auth.currentUser != null;
-  }
-
-  // Get current user
-  User? getCurrentUser() {
-    return _auth.currentUser;
   }
 
   // Create user with email and password
@@ -140,6 +130,7 @@ class AuthService {
       await _saveUserData(userCredential.user);
       return userCredential;
     } on FirebaseAuthException catch (e) {
+      log('Error during user creation: ${e.message}');
       Get.snackbar(
         'Error',
         e.message ?? 'An error occurred during sign up',
@@ -172,7 +163,7 @@ class AuthService {
       final userData = await _firestore.getUserData(user.uid);
       final hasCompletedOnboarding =
           userData?['hasCompletedOnboarding'] ?? false;
-  
+
       if (!hasCompletedOnboarding) {
         Get.to(
           () => CreateUsernameScreen(uid: user.uid),
@@ -189,3 +180,77 @@ class AuthService {
     }
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+// import 'package:firebase_auth/firebase_auth.dart';
+// import 'package:get/get.dart';
+// import 'package:kfc_app/view/auth/otp_screen.dart';
+// import 'package:kfc_app/view/home/home_page.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
+
+
+// class AuthController extends GetxController {
+//   final FirebaseAuth _auth = FirebaseAuth.instance;
+//   late String _verificationId;
+
+//   Future<void> sendOTP(String phoneNumber) async {
+//     await _auth.verifyPhoneNumber(
+//       phoneNumber: phoneNumber,
+//       verificationCompleted: (PhoneAuthCredential credential) async {
+//         await _auth.signInWithCredential(credential);
+//         await _setLoginStatus(true);
+//         Get.offAll(() => HomePage());
+//       },
+//       verificationFailed: (FirebaseAuthException e) {
+//         Get.snackbar("Error", e.message ?? "Verification Failed");
+//       },
+//       codeSent: (String verId, int? resendToken) {
+//         _verificationId = verId;
+//         Get.to(() => OTPScreen());
+//       },
+//       codeAutoRetrievalTimeout: (String verId) {
+//         _verificationId = verId;
+//       },
+//     );
+//   }
+
+//   Future<void> verifyOTP(String otp) async {
+//     try {
+//       PhoneAuthCredential credential = PhoneAuthProvider.credential(
+//         verificationId: _verificationId,
+//         smsCode: otp,
+//       );
+//       await _auth.signInWithCredential(credential);
+//       await _setLoginStatus(true);
+//       Get.offAll(() => HomePage());
+//     } catch (e) {
+//       Get.snackbar("Error", "Invalid OTP");
+//     }
+//   }
+
+//   Future<void> logout() async {
+//     await _auth.signOut();
+//     await _setLoginStatus(false);
+//     Get.offAllNamed('/login');
+//   }
+
+//   Future<void> _setLoginStatus(bool status) async {
+//     SharedPreferences prefs = await SharedPreferences.getInstance();
+//     await prefs.setBool('isLoggedIn', status);
+//   }
+
+//   Future<bool> isLoggedIn() async {
+//     SharedPreferences prefs = await SharedPreferences.getInstance();
+//     return prefs.getBool('isLoggedIn') ?? false;
+//   }
+// }

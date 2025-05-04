@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
@@ -5,7 +7,7 @@ import 'package:get/get.dart';
 import 'package:reddit/pages/OnetTimePages/splash_screen.dart';
 import 'package:reddit/pages/HomePages/Navigation_screen.dart';
 import 'package:reddit/widgets/loading_screen.dart';
-import 'package:reddit/pages/PostPages/services/shared_preferences_service.dart';
+import 'package:reddit/services/shared_preferences_service.dart';
 import 'package:reddit/controller/profile_controller.dart';
 import 'package:reddit/controller/feed_controller.dart';
 import 'package:reddit/controller/community_controller.dart';
@@ -90,10 +92,12 @@ class MyApp extends StatelessWidget {
         future: _checkOnboardingStatus(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
+            log("Loading");
             return const LoadingScreen();
           }
 
           if (snapshot.hasData && snapshot.data == true) {
+            log("Onboarding");
             return const NavigationScreen();
           }
 

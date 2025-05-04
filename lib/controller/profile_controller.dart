@@ -2,9 +2,9 @@ import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:reddit/model/reddit_post.dart';
-import 'package:reddit/pages/PostPages/services/firebase_post_service.dart';
-import 'package:reddit/pages/PostPages/services/firestore_service.dart';
-import 'package:reddit/pages/PostPages/services/shared_preferences_service.dart';
+import 'package:reddit/services/firebase_post_service.dart';
+import 'package:reddit/services/firestore_service.dart';
+import 'package:reddit/services/shared_preferences_service.dart';
 
 class ProfileController extends GetxController {
   final _prefs = SharedPreferencesService();
@@ -162,7 +162,7 @@ class ProfileController extends GetxController {
         }
       }
     } catch (e) {
-      print('Error loading user data: $e');
+      log('Error loading user data: $e');
     } finally {
       isLoadingUserData.value = false;
     }
@@ -176,8 +176,9 @@ class ProfileController extends GetxController {
   // Save a post
   Future<void> savePost(String postId) async {
     try {
-      if (userId.value.isEmpty)
+      if (userId.value.isEmpty) {
         return; // Don't proceed if user is not logged in
+      }
 
       if (!savedPosts.contains(postId)) {
         savedPosts.add(postId);
@@ -194,8 +195,9 @@ class ProfileController extends GetxController {
   // Unsave a post
   Future<void> unsavePost(String postId) async {
     try {
-      if (userId.value.isEmpty)
+      if (userId.value.isEmpty) {
         return; // Don't proceed if user is not logged in
+      }
 
       if (savedPosts.contains(postId)) {
         savedPosts.remove(postId);
@@ -232,8 +234,9 @@ class ProfileController extends GetxController {
   Future<void> saveComment(
       String commentId, String postId, String commentText) async {
     try {
-      if (userId.value.isEmpty)
+      if (userId.value.isEmpty) {
         return; // Don't proceed if user is not logged in
+      }
 
       if (!savedComments.contains(commentId)) {
         savedComments.add(commentId);
@@ -260,8 +263,9 @@ class ProfileController extends GetxController {
   // Unsave a comment
   Future<void> unsaveComment(String commentId) async {
     try {
-      if (userId.value.isEmpty)
+      if (userId.value.isEmpty) {
         return; // Don't proceed if user is not logged in
+      }
 
       if (savedComments.contains(commentId)) {
         // Remove from local state
@@ -317,8 +321,9 @@ class ProfileController extends GetxController {
   // Upvote a post
   Future<void> upvotePost(String postId) async {
     try {
-      if (userId.value.isEmpty)
+      if (userId.value.isEmpty) {
         return; // Don't proceed if user is not logged in
+      }
 
       final currentVote = postVotes[postId] ?? 0;
       int newVote;
@@ -346,8 +351,9 @@ class ProfileController extends GetxController {
   // Downvote a post
   Future<void> downvotePost(String postId) async {
     try {
-      if (userId.value.isEmpty)
+      if (userId.value.isEmpty) {
         return; // Don't proceed if user is not logged in
+      }
 
       final currentVote = postVotes[postId] ?? 0;
       int newVote;
@@ -407,7 +413,7 @@ class ProfileController extends GetxController {
         });
       }
     } catch (e) {
-      print('Error leaving community: $e');
+      log('Error leaving community: $e');
       rethrow;
     }
   }
@@ -422,7 +428,7 @@ class ProfileController extends GetxController {
         });
       }
     } catch (e) {
-      print('Error joining post: $e');
+      log('Error joining post: $e');
       rethrow;
     }
   }
@@ -437,7 +443,7 @@ class ProfileController extends GetxController {
         });
       }
     } catch (e) {
-      print('Error leaving post: $e');
+      log('Error leaving post: $e');
       rethrow;
     }
   }
@@ -451,7 +457,7 @@ class ProfileController extends GetxController {
         await joinPost(postId);
       }
     } catch (e) {
-      print('Error toggling post join status: $e');
+      log('Error toggling post join status: $e');
       rethrow;
     }
   }
@@ -465,7 +471,7 @@ class ProfileController extends GetxController {
         await joinCommunity(communityName);
       }
     } catch (e) {
-      print('Error toggling community join status: $e');
+      log('Error toggling community join status: $e');
       rethrow;
     }
   }
@@ -477,7 +483,7 @@ class ProfileController extends GetxController {
       });
       username.value = newUsername;
     } catch (e) {
-      print('Error updating username: $e');
+      log('Error updating username: $e');
       rethrow;
     }
   }
@@ -491,7 +497,7 @@ class ProfileController extends GetxController {
       gender.value = newGender;
       hasCompletedOnboarding.value = true;
     } catch (e) {
-      print('Error updating gender: $e');
+      log('Error updating gender: $e');
       rethrow;
     }
   }
@@ -501,7 +507,7 @@ class ProfileController extends GetxController {
       await _firestoreService.saveUserInterests(userId.value, newInterests);
       interests.value = newInterests;
     } catch (e) {
-      print('Error updating interests: $e');
+      log('Error updating interests: $e');
       rethrow;
     }
   }
@@ -514,7 +520,7 @@ class ProfileController extends GetxController {
       });
       karma.value = newKarma;
     } catch (e) {
-      print('Error incrementing karma: $e');
+      log('Error incrementing karma: $e');
       rethrow;
     }
   }
@@ -526,7 +532,7 @@ class ProfileController extends GetxController {
       });
       photoUrl.value = newPhotoUrl;
     } catch (e) {
-      print('Error updating photoUrl: $e');
+      log('Error updating photoUrl: $e');
       rethrow;
     }
   }
@@ -560,8 +566,9 @@ class ProfileController extends GetxController {
   Future<void> saveUserComment(String postId, String postTitle,
       String commentText, String subreddit) async {
     try {
-      if (userId.value.isEmpty)
+      if (userId.value.isEmpty) {
         return; // Don't proceed if user is not logged in
+      }
 
       // Create comment data
       final commentData = {
@@ -609,8 +616,9 @@ class ProfileController extends GetxController {
       String postId, String postTitle, String subreddit,
       {String? postThumbnail}) async {
     try {
-      if (userId.value.isEmpty)
+      if (userId.value.isEmpty) {
         return; // Don't proceed if user is not logged in
+      }
 
       // Create history data
       final historyData = {
@@ -669,7 +677,7 @@ class ProfileController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green.withOpacity(0.7),
         colorText: Colors.white,
-        duration: Duration(seconds: 2),
+        duration: const Duration(seconds: 2),
       );
     } catch (e) {
       log('Error clearing view history: $e');
@@ -679,7 +687,7 @@ class ProfileController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.withOpacity(0.7),
         colorText: Colors.white,
-        duration: Duration(seconds: 2),
+        duration: const Duration(seconds: 2),
       );
     }
   }

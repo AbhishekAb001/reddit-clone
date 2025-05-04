@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:reddit/model/reddit_post.dart';
 import 'package:reddit/model/reddit_comment.dart';
-import 'package:reddit/pages/PostPages/services/reddit_post_service.dart';
+import 'package:reddit/services/reddit_post_service.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:share_plus/share_plus.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:reddit/pages/PostPages/services/reddit_post_service.dart';
+import 'package:reddit/services/reddit_post_service.dart';
 import 'package:reddit/pages/CommunityPages/details_screen_new.dart';
 import 'package:reddit/pages/PostPages/post_comment_screen.dart';
 import 'package:reddit/controller/profile_controller.dart';

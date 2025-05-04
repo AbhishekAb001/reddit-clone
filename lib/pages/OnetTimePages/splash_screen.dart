@@ -1,11 +1,13 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:reddit/pages/AuthPages/login_screen.dart';
 import 'package:reddit/pages/HomePages/Navigation_screen.dart';
 import 'package:reddit/widgets/loading_screen.dart';
-import 'package:reddit/pages/PostPages/services/shared_preferences_service.dart';
-import 'package:reddit/pages/PostPages/services/firestore_service.dart';
+import 'package:reddit/services/shared_preferences_service.dart';
+import 'package:reddit/services/firestore_service.dart';
 import 'package:reddit/pages/OnetTimePages/create_username_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -45,40 +47,50 @@ class _SplashScreenState extends State<SplashScreen>
     await _prefs.init();
     await Future.delayed(const Duration(seconds: 2));
 
-    if (_prefs.isLoggedIn()) {
-      final userId = _prefs.getUserId();
-      if (userId != null) {
-        final userData = await _firestore.getUserData(userId);
-        final hasCompletedOnboarding =
-            userData?['hasCompletedOnboarding'] ?? false;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (_prefs.isLoggedIn()) {
+        final userId = _prefs.getUserId();
+        if (userId != null) {
+          final userData = await _firestore.getUserData(userId);
+          final hasCompletedOnboarding =
+              userData?['hasCompletedOnboarding'] ?? false;
 
-        if (!hasCompletedOnboarding) {
-          Get.offAll(
-            () => CreateUsernameScreen(uid: userId),
-            transition: Transition.fadeIn,
-            duration: const Duration(milliseconds: 500),
-          );
+          log('User ID: $userId');
+          log('Has Completed Onboarding: $hasCompletedOnboarding');
+
+          if (!hasCompletedOnboarding) {
+            log('Navigate: CreateUsernameScreen');
+            Get.offAll(
+              () => CreateUsernameScreen(uid: userId),
+              transition: Transition.fadeIn,
+              duration: const Duration(milliseconds: 500),
+            );
+          } else {
+            log('Navigate: NavigationScreen');
+            Get.offAll(
+              () => const NavigationScreen(),
+              transition: Transition.fadeIn,
+              duration: const Duration(milliseconds: 500),
+            );
+          }
         } else {
-          Get.offAll(
-            () => const LoadingScreen(),
-            transition: Transition.fadeIn,
-            duration: const Duration(milliseconds: 500),
-          );
+          _goToLoginScreen();
         }
       } else {
-        Get.offAll(
-          () => const LoginScreen(),
-          transition: Transition.fadeIn,
-          duration: const Duration(milliseconds: 500),
-        );
+        _goToLoginScreen();
       }
-    } else {
+    });
+  }
+
+  void _goToLoginScreen() {
+    log('Navigate: LoginScreen');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       Get.offAll(
         () => const LoginScreen(),
         transition: Transition.fadeIn,
         duration: const Duration(milliseconds: 500),
       );
-    }
+    });
   }
 
   @override

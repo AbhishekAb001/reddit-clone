@@ -8,8 +8,8 @@ import 'package:reddit/controller/community_controller.dart';
 import 'package:reddit/controller/profile_controller.dart';
 import 'package:reddit/model/Community.dart';
 import 'package:reddit/pages/HomePages/Navigation_screen.dart';
-import 'package:reddit/pages/PostPages/services/firebase_post_service.dart';
-import 'package:reddit/pages/PostPages/services/reddit_post_service.dart';
+import 'package:reddit/services/firebase_post_service.dart';
+import 'package:reddit/services/reddit_post_service.dart';
 
 class CreatePostScreen extends StatefulWidget {
   final String? preSelectedCommunity;

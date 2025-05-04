@@ -3,6 +3,7 @@ import 'package:lottie/lottie.dart';
 import 'package:get/get.dart';
 import 'package:reddit/controller/community_controller.dart';
 import 'package:reddit/controller/feed_controller.dart';
+import 'package:reddit/pages/HomePages/Navigation_screen.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -17,7 +18,13 @@ class _LoadingScreenState extends State<LoadingScreen> {
   @override
   void initState() {
     super.initState();
+    _fetchPostsAndCommunities();
+  }
+
+  void _fetchPostsAndCommunities() async {
     feedController.fetchPostsFromInterests();
+
+    Get.offAll(() => const NavigationScreen());
   }
 
   @override

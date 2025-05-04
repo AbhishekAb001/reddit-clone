@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 import 'package:get/get.dart';
-import 'package:reddit/pages/PostPages/services/reddit_post_service.dart';
+import 'package:reddit/services/reddit_post_service.dart';
 import 'package:reddit/controller/profile_controller.dart';
 import 'package:reddit/model/reddit_post.dart';
 
@@ -35,7 +35,7 @@ class FeedController extends GetxController {
     super.onClose();
   }
 
-  Future<void> fetchPostsFromInterests() async {
+  Future<bool> fetchPostsFromInterests() async {
     try {
       isLoading.value = true;
       final interests = _profileController.interests;
@@ -48,7 +48,7 @@ class FeedController extends GetxController {
             defaultPosts.map((post) => RedditPost.fromJson(post)).toList();
         allPosts.value = redditPosts.take(20).toList();
         _postsController.add(allPosts);
-        return;
+        return true;
       }
 
       final List<RedditPost> fetchedPosts = [];
@@ -74,6 +74,7 @@ class FeedController extends GetxController {
       fetchedPosts.shuffle();
       allPosts.value = fetchedPosts;
       _postsController.add(fetchedPosts); // Emit posts through the stream
+      return true;
     } catch (e) {
       log('Error in fetchPostsFromInterests: $e');
       // Handle error but don't clear existing posts
@@ -83,6 +84,7 @@ class FeedController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+    return false; // Ensure a boolean is always returned
   }
 
   Future<void> refreshFeed() async {

@@ -22,8 +22,8 @@ Use proper formatting and avoid any special characters.
 Here is the request: $prompt
 ''';
 
-      final stream = Gemini.instance.promptStream(
-        parts: [Part.text(formattedPrompt)],
+      final stream = Gemini.instance.streamGenerateContent(
+        formattedPrompt,
       );
 
       return stream.map((response) {

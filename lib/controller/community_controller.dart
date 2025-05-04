@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 import 'package:reddit/model/Community.dart';
-import 'package:reddit/pages/PostPages/services/community_service.dart';
+import 'package:reddit/services/community_service.dart';
 import 'package:reddit/controller/profile_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:cloudinary_public/cloudinary_public.dart';

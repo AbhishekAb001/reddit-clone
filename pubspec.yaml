@@ -14,15 +14,17 @@ dependencies:
   google_fonts: ^6.1.0
   path_provider: ^2.1.2
   shared_preferences: ^2.2.2
-  firebase_core: ^2.24.2
-  firebase_auth: ^4.15.3
-  google_sign_in: ^6.1.4
-  cloud_firestore: ^4.17.5
+  firebase_core: ^3.3.0
+  firebase_auth: ^5.1.4
+  google_sign_in: ^6.2.1
+  cloud_firestore: ^5.2.1      # Compatible with older web versions
+  share_plus: ^7.0.0          # Compatible with mime ^1.0.4
+
+
   lottie: ^2.7.0
   badges: ^3.1.2
   http: ^1.2.0
   google_generative_ai: ^0.2.0
-  flutter_gemini: ^3.0.0
   shimmer: ^3.0.0
   video_player: ^2.8.2
   chewie: ^1.7.5
@@ -31,10 +33,11 @@ dependencies:
   image_picker: ^1.1.2
   html_unescape: ^2.0.0
   avatar_plus: ^0.0.5
-  share_plus: ^11.0.0
   url_launcher: ^6.2.5
   timeago: ^3.7.0
   cloudinary_public: ^0.21.0
+  flutter_gemini: ^2.0.5
+
 
 dev_dependencies:
   flutter_test:

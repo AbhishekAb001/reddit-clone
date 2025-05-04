@@ -4,14 +4,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:reddit/controller/profile_controller.dart';
-import 'package:reddit/pages/PostPages/services/reddit_post_service.dart';
+import 'package:reddit/services/reddit_post_service.dart';
 import 'package:reddit/model/reddit_post.dart';
 import 'package:reddit/model/reddit_comment.dart';
 import 'package:reddit/widgets/post_card.dart';
 import 'package:reddit/widgets/shimmer_post_card.dart';
 import 'package:reddit/pages/PostPages/post_comment_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:reddit/pages/PostPages/services/firestore_service.dart';
+import 'package:reddit/services/firestore_service.dart';
 
 class SavedDrawerPage extends StatefulWidget {
   const SavedDrawerPage({super.key});

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:get/get.dart';
+import 'package:timeago/timeago.dart' as timeago;
+import 'package:reddit/model/notification.dart';
 
 class InboxScreen extends StatefulWidget {
   const InboxScreen({super.key});
@@ -49,31 +52,66 @@ class _InboxScreenState extends State<InboxScreen> {
                 child: TabBarView(
                   children: [
                     // Notifications tab
-                    ListView(
-                      children: [
-                        _buildNotification(
-                          'Achievement unlocked!',
-                          'Check out your newest achievement',
-                          '1h',
-                          FontAwesomeIcons.trophy,
-                        ),
-                        _buildNotification(
-                          'A new beginning',
-                          'Congrats on your new streak! Click to learn more',
-                          '13h',
-                          FontAwesomeIcons.fire,
-                          showDivider: true,
-                        ),
-                      ],
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            FontAwesomeIcons.reddit,
+                            size: screenWidth * 0.25,
+                            color: Colors.white,
+                          ),
+                          SizedBox(height: screenHeight * 0.03),
+                          Text(
+                            'This feature is coming soon!',
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: screenWidth * 0.05,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: screenHeight * 0.01),
+                          Text(
+                            'We are working hard to bring you\nthis exciting feature.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              color: Colors.grey,
+                              fontSize: screenWidth * 0.035,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+
                     // Messages tab
                     Center(
-                      child: Text(
-                        'Messages',
-                        style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontSize: screenWidth * 0.05,
-                        ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            FontAwesomeIcons.reddit,
+                            size: screenWidth * 0.25,
+                            color: Colors.white,
+                          ),
+                          SizedBox(height: screenHeight * 0.03),
+                          Text(
+                            'This feature is coming soon!',
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: screenWidth * 0.05,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: screenHeight * 0.01),
+                          Text(
+                            'We are working hard to bring you\nthis exciting feature.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              color: Colors.grey,
+                              fontSize: screenWidth * 0.035,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -92,9 +130,10 @@ class _InboxScreenState extends State<InboxScreen> {
     String time,
     IconData icon, {
     bool showDivider = false,
+    required String notificationId,
   }) {
     return Dismissible(
-      key: Key(title),
+      key: Key(notificationId),
       background: Container(
         color: Colors.red,
         alignment: Alignment.centerRight,
@@ -103,6 +142,7 @@ class _InboxScreenState extends State<InboxScreen> {
             Icon(Icons.delete, color: Colors.white, size: screenWidth * 0.06),
       ),
       direction: DismissDirection.endToStart,
+      onDismissed: (direction) async {},
       child: Column(
         children: [
           ListTile(

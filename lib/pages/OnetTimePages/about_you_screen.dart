@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:reddit/pages/HomePages/Navigation_screen.dart';
 import 'package:reddit/widgets/loading_screen.dart';
-import 'package:reddit/pages/PostPages/services/firestore_service.dart';
+import 'package:reddit/services/firestore_service.dart';
 import 'package:reddit/pages/OnetTimePages/interests_screen.dart';
 
 class AboutYouScreen extends StatefulWidget {
